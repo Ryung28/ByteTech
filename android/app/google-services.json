@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "525631488555",
+    "project_id": "galabin-flutter---3c",
+    "storage_bucket": "galabin-flutter---3c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525631488555:android:547656a1344f62819da06e",
+        "android_client_info": {
+          "package_name": "com.example.mobileapplication.marineguard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "525631488555-tlf3bn2jlthie6rv0blo4i7a3ql7j5t3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mobileapplication.marineguard",
+            "certificate_hash": "52ad439b9e1e3b981c6bb0b68ea230be38c45d4b"
+          }
+        },
+        {
+          "client_id": "525631488555-cpehu6r4q00q6vclgiueeiin9aqji9f3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuSWswOodqVDC4meu3Sk1a7LwtH5mN1co"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "525631488555-cpehu6r4q00q6vclgiueeiin9aqji9f3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

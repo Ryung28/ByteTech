@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobileapplication/authenticationpages/registerpage/register_page.dart';
-import 'package:mobileapplication/firebase/loginfirestore.dart';
-import 'package:mobileapplication/authenticationpages/authentication_pages/registerpage/register_page.dart';
+import 'package:mobileapplication/authenticationpages/loginpage/loginfirestore.dart';
 import 'package:mobileapplication/authenticationpages/loginpage/reusable_loginpage.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 
@@ -42,17 +41,24 @@ class _LoginPageState extends State<LoginPage> with LoginHandler {
                       obscure: obscure,
                       togglePasswordVisibility: () =>
                           setState(() => obscure = !obscure),
-                      onLogin: () => handleLogin(
-                        context: context,
-                        formKey: _formKey,
-                        emailController: emailAddressController,
-                        passwordController: passwordController,
-                        authService: _authService,
-                        auth: _auth,
-                        setLoading: (bool value) =>
-                            setState(() => _isLoading = value),
-                        mounted: mounted,
-                      ),
+                      onLogin: () {
+                        if (!_isLoading) {
+                          handleLogin(
+                            context: context,
+                            formKey: _formKey,
+                            emailController: emailAddressController,
+                            passwordController: passwordController,
+                            authService: _authService,
+                            auth: _auth,
+                            setLoading: (bool loading) {
+                              if (mounted) {
+                                setState(() => _isLoading = loading);
+                              }
+                            },
+                            mounted: mounted,
+                          );
+                        }
+                      },
                       isLoading: _isLoading,
                       onRegisterTap: () => Navigator.push(
                         context,
@@ -60,14 +66,24 @@ class _LoginPageState extends State<LoginPage> with LoginHandler {
                             builder: (context) => const RegisterPage()),
                       ),
                       mounted: mounted,
-                      setLoading: (bool value) =>
-                          setState(() => _isLoading = value),
-                      onGoogleSignIn: () => OAuthHandler.handleGoogleSignIn(
-                        context: context,
-                        setLoading: (bool value) =>
-                            setState(() => _isLoading = value),
-                        mounted: mounted,
-                      ),
+                      setLoading: (bool value) {
+                        if (mounted) {
+                          setState(() => _isLoading = value);
+                        }
+                      },
+                      onGoogleSignIn: () {
+                        if (!_isLoading) {
+                          OAuthHandler.handleGoogleSignIn(
+                            context: context,
+                            setLoading: (bool loading) {
+                              if (mounted) {
+                                setState(() => _isLoading = loading);
+                              }
+                            },
+                            mounted: mounted,
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -78,15 +94,33 @@ class _LoginPageState extends State<LoginPage> with LoginHandler {
             Container(
               color: Colors.black.withOpacity(0.5),
               child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Color.fromARGB(255, 34, 38, 71),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Logging in...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    emailAddressController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 }

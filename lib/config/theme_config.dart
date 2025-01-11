@@ -1,37 +1,35 @@
 import 'package:flutter/material.dart';
 
 class ThemeConfig {
-  // Ocean Theme Light Colors
-  static const lightPrimary = Color(0xFF1A73E8);      // Ocean Blue
-  static const lightSurface = Color(0xFFE8F1FB);      // Soft Sky Blue
-  static const lightBackground = Color(0xFFF5F9FF);    // Pale Ocean Blue
-  static const lightAccent = Color(0xFF0D47A1);       // Deep Ocean Blue
-  static const lightText = Color(0xFF2C3E50);         // Dark Ocean Gray
+  static const lightPrimary = Color(0xFF1A73E8);      
+  static const lightSurface = Color(0xFFE8F1FB);     
+  static const lightBackground = Color(0xFFF5F9FF);   
+  static const lightAccent = Color(0xFF0D47A1);       
+  static const lightText = Color(0xFF2C3E50);        
   static const lightCard = Colors.white;
-  static const lightDivider = Color(0xFFCFE3FF);      // Light Ocean Mist
+  static const lightDivider = Color(0xFFCFE3FF);      
   
   // Ocean Gradient Light Theme Colors
-  static const lightGradientStart = Color(0xFFF0F5FA);  // Lightest Ocean Mist
-  static const lightGradientMiddle = Color(0xFFE5EEF9); // Ocean Haze
-  static const lightGradientEnd = Color(0xFFDAE7F8);    // Deeper Ocean Mist
-  static const lightDeepBlue = Color(0xFF0A4FA8);       // Deep Ocean
-  static const lightSurfaceBlue = Color(0xFF4A90E2);    // Clear Ocean Blue
-  static const lightBlueAccent = Color(0xFF64B5F6);     // Shallow Water Blue
-  static const lightAccentBlue = Color(0xFF0288D1);     // Marine Blue
+  static const lightGradientStart = Color(0xFFF0F5FA);  
+  static const lightGradientMiddle = Color(0xFFE5EEF9); 
+  static const lightGradientEnd = Color(0xFFDAE7F8);    
+  static const lightDeepBlue = Color(0xFF0A4FA8);       
+  static const lightSurfaceBlue = Color(0xFF4A90E2);    
+  static const lightBlueAccent = Color(0xFF64B5F6);     
+  static const lightAccentBlue = Color(0xFF0288D1);    
   static const lightWhiteWater = Color(0xFFECF3FF);     
 
-  // Ocean Theme Dark Colors
-  static const darkPrimary = Color(0xFF1976D2);         // Night Ocean Blue
-  static const darkSurface = Color(0xFF1A2634);         // Deep Sea
-  static const darkBackground = Color(0xFF0F1924);      // Abyssal Blue
-  static const darkAccent = Color(0xFF4FC3F7);          // Bioluminescent Blue
-  static const darkText = Color(0xFFE3F2FD);            // Ocean Foam White
-  static const darkCard = Color(0xFF1E2A3A);            // Deep Water
-  static const darkDivider = Color(0xFF2A3C50);         // Ocean Trench
-  static const darkBlueAccent = Color(0xFF64B5F6);      // Bright Ocean Blue
-  static const darkDeepBlue = Color(0xFF0A4FA8);       // Deep Ocean
-  static const darkAccentBlue = Color(0xFF0288D1);      // Marine Blue
-  static const Color textDark = Color(0xFF2D3142);  // You can adjust this hex color
+  static const darkPrimary = Color(0xFF1976D2);         
+  static const darkSurface = Color(0xFF1A2634);       
+  static const darkBackground = Color(0xFF0F1924);      
+  static const darkAccent = Color(0xFF4FC3F7);          
+  static const darkText = Color(0xFFE3F2FD);           
+  static const darkCard = Color(0xFF1E2A3A);           
+  static const darkDivider = Color(0xFF2A3C50);      
+  static const darkBlueAccent = Color(0xFF64B5F6);    
+  static const darkDeepBlue = Color(0xFF0A4FA8);      
+  static const darkAccentBlue = Color(0xFF0288D1);      
+  static const Color textDark = Color(0xFF2D3142);  
 
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,

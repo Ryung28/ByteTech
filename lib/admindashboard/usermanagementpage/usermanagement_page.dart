@@ -68,7 +68,6 @@ class _ManageUserPageState extends State<ManageUserPage> {
               padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
               child: Align(
                 alignment: Alignment.centerLeft,
-                // ignore: sized_box_for_whitespace
                 child: Container(
                   width: 280,
                   height: 40,

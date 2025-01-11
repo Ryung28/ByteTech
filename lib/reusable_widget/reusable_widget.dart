@@ -1,17 +1,20 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_page.dart';
 import 'package:mobileapplication/registerpage/modal.dart';
-import 'package:mobileapplication/firebase/loginfirestore.dart';
+import 'package:mobileapplication/authenticationpages/loginpage/loginfirestore.dart';
 import 'package:mobileapplication/authenticationpages/loginpage/login_page.dart';
 import 'package:mobileapplication/authenticationpages/loginpage/reusable_loginpage.dart';
 import 'package:mobileapplication/userdashboard/userdashboardpage/user_dashboard.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mobileapplication/services/auth_counter_service.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_page.dart';
+import 'package:mobileapplication/services/google_auth_service.dart';
 
 AppBar myAppbar(Color color,
     {Widget? title,
@@ -110,7 +113,6 @@ Widget myTextform({
         ),
       ),
       Container(
-        height: 50,
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 0),
         child: TextFormField(
@@ -141,7 +143,7 @@ Widget myTextform({
                         onPressed: onVisible,
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide(color: Colors.grey.shade300),
@@ -151,6 +153,14 @@ Widget myTextform({
                   borderSide: const BorderSide(
                     color: Color.fromARGB(255, 25, 115, 232),
                   ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.red.shade300),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.red.shade400),
                 ),
               ),
         ),
@@ -182,8 +192,7 @@ Container myButton2(
     decoration: decoration ??
         BoxDecoration(
           color: color ?? Colors.white,
-          borderRadius: borderRadius ??
-              BorderRadius.circular(12), // This should now work correctly
+          borderRadius: borderRadius ?? BorderRadius.circular(12), // This should now work correctly
           border: Border.all(
             color: const Color.fromARGB(255, 255, 255, 255),
             width: 1.5,
@@ -712,43 +721,54 @@ void showErrorModal(BuildContext context, String title, String message) {
 //social login button
 Widget socialLoginButton({
   required VoidCallback onPressed,
-  required String icon,
+  String? icon,
   required String label,
-  required Color backgroundColor,
-  required Color textColor,
-  double? width, // Add width parameter
+  Color? backgroundColor,
+  Color? textColor,
+  double? width,
+  double? iconSize,
 }) {
-  return SizedBox(
-    width: width, // Allow custom width
-    child: ElevatedButton(
+  return Container(
+    width: width ?? double.infinity,
+    height: 50,
+    margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+    child: OutlinedButton(
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: textColor,
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: backgroundColor ?? Colors.white,
+        side: BorderSide(color: Colors.grey.shade300),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50), // Match login button radius
-          side: BorderSide(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(8),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min, // Take minimum space
+      child: Stack(
         children: [
-          Image.asset(
-            icon,
-            height: 24,
-            width: 24,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
+          Positioned.fill(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  ClipOval(
+                    child: Image.asset(
+                      icon,
+                      height: iconSize ?? 24,
+                      width: iconSize ?? 24,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor ?? Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -759,12 +779,6 @@ Widget socialLoginButton({
 
 // Change from mixin to class
 class OAuthHandler {
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    signInOption: SignInOption.standard,
-    forceCodeForRefreshToken: true,
-  );
-
   static Future<void> handleGoogleSignIn({
     required BuildContext context,
     required Function(bool) setLoading,
@@ -772,50 +786,45 @@ class OAuthHandler {
   }) async {
     try {
       setLoading(true);
-      await _googleSignIn.signOut();
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
-
+      
+      final result = await GoogleAuthService.signIn();
+      
       if (!mounted) return;
 
-      await FirebaseFirestore.instance
+      // Get the user document
+      final userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-        'firstName': googleUser.displayName?.split(' ').first ?? '',
-        'lastName': googleUser.displayName?.split(' ').last ?? '',
-        'email': googleUser.email,
-        'username': googleUser.email.split('@').first,
-        'isAdmin': false,
-        'firebaseUID': userCredential.user!.uid,
-        'createdAt': FieldValue.serverTimestamp(),
-        'provider': 'google',
-      }, SetOptions(merge: true));
+          .doc(result.docId)
+          .get();
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const UserDashboard()),
-      );
-    } catch (e) {
-      print('Google Sign In Error: $e');
+
+      if (!userDoc.exists) {
+        throw 'User document not found';
+      }
+
+      // Navigate to the appropriate dashboard based on admin status
+      final bool isAdmin = userDoc.data()?['isAdmin'] ?? false;
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google Sign In failed: ${e.toString()}')),
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => 
+              isAdmin ? const AdmindashboardPage() : const UserDashboard(),
+        ),
       );
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     } finally {
-      if (mounted) setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     }
   }
 }

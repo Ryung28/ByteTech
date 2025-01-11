@@ -1,14 +1,14 @@
-import 'dart:math';
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/analytic_model.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/chart_state.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/time_formatter_mixin.dart';
+import 'package:mobileapplication/config/theme_config.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 import 'package:provider/provider.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/analytic_model.dart';
-import 'package:mobileapplication/config/theme_config.dart';
-import 'admin_analytics_reusablewidget/chart_state.dart';
-import 'admin_analytics_reusablewidget/time_formatter.dart';
-import 'admin_analytics_reusablewidget/chart_grid.dart';
+import 'dart:math';
+import 'dart:ui';
 import 'admin_analytics_reusablewidget/chart_styles.dart';
 
 class UserActivityChart extends StatelessWidget {
@@ -190,7 +190,7 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
   @override
   Widget build(BuildContext context) => LineChart(
         LineChartData(
-          gridData: ChartGrid.build(),
+          gridData: _buildGrid(),
           borderData: FlBorderData(
             show: true,
             border: Border(
@@ -211,6 +211,29 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
         ),
         duration: const Duration(milliseconds: 250),
       );
+
+  FlGridData _buildGrid() {
+    return FlGridData(
+      show: true,
+      drawVerticalLine: true,
+      horizontalInterval: 5,
+      verticalInterval: 1,
+      getDrawingHorizontalLine: (value) {
+        return FlLine(
+          color: Colors.grey[200]!,
+          strokeWidth: 0.5,
+          dashArray: value % 10 == 0 ? null : [5, 5],
+        );
+      },
+      getDrawingVerticalLine: (value) {
+        return FlLine(
+          color: Colors.grey[200]!,
+          strokeWidth: 0.5,
+          dashArray: [5, 5],
+        );
+      },
+    );
+  }
 
   double calculateInterval(TimeRange selectedRange) {
     final dataLength = data.length;
@@ -243,7 +266,7 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
       ),
       sideTitles: SideTitles(
         showTitles: true,
-        reservedSize: 15,
+        reservedSize: 35, // Increased from 15 to give more space
         interval: calculateInterval(chartState.selectedRange),
         getTitlesWidget: (value, meta) {
           if (value.toInt() >= 0 && value.toInt() < data.length) {
@@ -252,7 +275,14 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
               width: 35,
               child: Text(
                 formatTimeLabel(data[value.toInt()].date, chartState.selectedRange),
-                style: ChartStyles.labelStyle.copyWith(fontSize: 6.5),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w500,
+                  fontFeatures: [
+                    const FontFeature.enable('sups'), // Makes AM/PM text larger
+                  ],
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
               ),
@@ -266,23 +296,25 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
 
   AxisTitles _buildLeftTitles() {
     return AxisTitles(
-      axisNameWidget: Padding(
-        padding: const EdgeInsets.only(bottom: 0),
-        child: Text('Users', style: ChartStyles.axisNameStyle),
+      axisNameWidget: Container(
+        margin: const EdgeInsets.only(right: 25),
+        child: Text(
+          'Users',
+          style: ChartStyles.axisNameStyle,
+          textAlign: TextAlign.center,
+        ),
       ),
       sideTitles: SideTitles(
         showTitles: true,
-        interval: 5,
-        reservedSize: 26,
+        reservedSize: 45,
+        interval: 10,
         getTitlesWidget: (value, meta) {
-          final isMainInterval = value % 10 == 0;
-          return Padding(
-            padding: const EdgeInsets.only(right: 4),
+          return Container(
+            padding: const EdgeInsets.only(right: 8),
             child: Text(
               value.toInt().toString(),
-              style: ChartStyles.labelStyle.copyWith(
-                fontWeight: isMainInterval ? FontWeight.w500 : FontWeight.w400,
-              ),
+              style: ChartStyles.labelStyle,
+              textAlign: TextAlign.right,
             ),
           );
         },
@@ -299,10 +331,29 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
         tooltipPadding: const EdgeInsets.all(12),
         tooltipMargin: 8,
         getTooltipItems: (spots) {
-          return spots.map((spot) {
-            final data = this.data[spot.x.toInt()];
+          if (spots.isEmpty) return [];
+          
+          return List.generate(spots.length, (i) {
+            final spot = spots[i];
+            final index = spot.x.toInt();
+            if (index < 0 || index >= data.length) {
+              // Return a dummy tooltip to maintain size consistency
+              return LineTooltipItem(
+                '0 Users\n',
+                ChartStyles.tooltipTitleStyle,
+                children: [
+                  TextSpan(
+                    text: 'No data',
+                    style: ChartStyles.tooltipSubtitleStyle,
+                  ),
+                ],
+              );
+            }
+            
+            final pointData = data[index];
             final chartState = context.read<ChartState>();
-            final formattedTime = formatTooltipTime(data.date, chartState.selectedRange);
+            final formattedTime = formatTooltipTime(pointData.date, chartState.selectedRange);
+            
             return LineTooltipItem(
               '${spot.y.toInt()} Users\n',
               ChartStyles.tooltipTitleStyle,
@@ -313,7 +364,7 @@ class _ChartBody extends StatelessWidget with TimeFormatterMixin {
                 ),
               ],
             );
-          }).toList();
+          });
         },
       ),
       touchSpotThreshold: 20,

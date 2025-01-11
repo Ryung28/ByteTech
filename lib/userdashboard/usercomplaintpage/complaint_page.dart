@@ -17,25 +17,46 @@ class ComplaintPage extends StatefulWidget {
 
 class _ComplaintPageState extends State<ComplaintPage> {
   static const int currentIndex = 2;
+  late ComplaintFormProvider _provider;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = ComplaintFormProvider();
+  }
+
+  @override
+  void dispose() {
+    _provider.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ComplaintFormProvider(),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            const ReusableComplaintPage(),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: FloatingNavBar(
-                currentIndex: currentIndex,
-                backgroundColor: Colors.white,
+    return PopScope(
+      canPop: !_provider.isSubmitting,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      },
+      child: ChangeNotifierProvider.value(
+        value: _provider,
+        child: Scaffold(
+          body: Stack(
+            children: [
+              const ReusableComplaintPage(),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: FloatingNavBar(
+                  currentIndex: currentIndex,
+                  backgroundColor: Colors.white,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -130,8 +151,8 @@ class _ComplaintPageState extends State<ComplaintPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.2) 
+            color: isDark
+                ? Colors.black.withOpacity(0.2)
                 : const Color(0xFF1E88E5).withOpacity(0.15),
             blurRadius: 6,
             offset: const Offset(0, 3),
@@ -226,15 +247,15 @@ class _ComplaintPageState extends State<ComplaintPage> {
 
   static InputDecoration inputDecoration(String label, IconData icon, BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark 
-        ? const Color(0xFF64B5F6) 
+    final primaryColor = isDark
+        ? const Color(0xFF64B5F6)
         : const Color(0xFF1E88E5);
-    
+
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: isDark 
-          ? const Color(0xFF2C2C2C) 
+      fillColor: isDark
+          ? const Color(0xFF2C2C2C)
           : Colors.grey[50],
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -258,8 +279,8 @@ class _ComplaintPageState extends State<ComplaintPage> {
         margin: const EdgeInsets.only(left: 8, right: 6),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: isDark 
-              ? Colors.grey[800] 
+          color: isDark
+              ? Colors.grey[800]
               : primaryColor.withOpacity(0.08),
           borderRadius: BorderRadius.circular(8),
         ),

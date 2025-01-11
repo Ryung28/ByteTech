@@ -20,15 +20,11 @@ class _OceanEducationHubState extends State<OceanEducationHub> {
           CustomScrollView(
             slivers: [
               SliverAppBar(
+                automaticallyImplyLeading: false,
                 expandedHeight: 200.0,
                 floating: false,
                 pinned: true,
                 backgroundColor: Colors.blue,
-                leading: myIconbutton(
-                  Icons.arrow_back,
-                  colors: Colors.white,
-                  () => Navigator.of(context).pop(),
-                ),
                 flexibleSpace: FlexibleSpaceBar(
                   title: myText(
                     'Ocean Education Hub',
@@ -139,17 +135,15 @@ class _OceanEducationHubState extends State<OceanEducationHub> {
         borderRadius: BorderRadius.circular(15),
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MarineEducationPage(
-                category: title,
-                isAdmin: false,
-              ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MarineEducationPage(
+              isAdmin: false,
+              category: title,
             ),
-          );
-        },
+          ),
+        ),
         borderRadius: BorderRadius.circular(15),
         child: Container(
           padding: const EdgeInsets.all(20),

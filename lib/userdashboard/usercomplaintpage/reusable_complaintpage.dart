@@ -8,10 +8,12 @@ import 'package:mobileapplication/reusable_widget/bottom_nav_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobileapplication/services/cloudinary_service.dart';
 import 'package:mobileapplication/userdashboard/usercomplaintpage/complaint_form_builders.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ReusableComplaintPage extends StatelessWidget {
-  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-  
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   const ReusableComplaintPage({super.key});
 
   @override
@@ -21,128 +23,150 @@ class ReusableComplaintPage extends StatelessWidget {
       key: scaffoldMessengerKey,
       child: Consumer<ComplaintFormProvider>(
         builder: (context, state, _) {
-          return Scaffold(
-            backgroundColor: isDark
-                ? const Color(0xFF1A1A1A)
-                : const Color.fromARGB(255, 197, 212, 223),
-            appBar: _buildAppBar(context),
-            body: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1A1A1A),
-                          const Color(0xFF2C2C2C),
-                        ]
-                      : [
-                          const Color.fromARGB(255, 197, 212, 223),
-                          const Color.fromARGB(255, 180, 200, 215),
-                        ],
+          return WillPopScope(
+            onWillPop: () async {
+              Navigator.of(context).pop();
+              return false;
+            },
+            child: Scaffold(
+              backgroundColor: isDark
+                  ? const Color(0xFF1A1A1A)
+                  : const Color.fromARGB(255, 197, 212, 223),
+              appBar: AppBar(
+                backgroundColor: isDark
+                    ? const Color(0xFF1A1A1A)
+                    : const Color.fromARGB(255, 197, 212, 223),
+                automaticallyImplyLeading: false,
+                title: const Text(
+                  'Submit Complaint',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                centerTitle: true,
               ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(
-                  left: 12.0,
-                  right: 12.0,
-                  top: 12.0,
-                  bottom: 100.0,
+              body: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? [
+                            const Color(0xFF1A1A1A),
+                            const Color(0xFF2C2C2C),
+                          ]
+                        : [
+                            const Color.fromARGB(255, 197, 212, 223),
+                            const Color.fromARGB(255, 180, 200, 215),
+                          ],
+                  ),
                 ),
-                child: Form(
-                  key: state.formKey!, // Added null check operator since formKey can be null
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.grey[850]
-                              : Colors.white.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark
-                                  ? Colors.black.withOpacity(0.3)
-                                  : Colors.grey.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    left: 12.0,
+                    right: 12.0,
+                    top: 12.0,
+                    bottom: 100.0,
+                  ),
+                  child: Form(
+                    key: state
+                        .formKey!, // Added null check operator since formKey can be null
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.grey[850]
+                                : Colors.white.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark
+                                    ? Colors.black.withOpacity(0.3)
+                                    : Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              // Title Section
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'File a Complaint',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1A237E),
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Please fill out the form below to report a seen illegal activity.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
+                                        fontSize: 14,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Divider(
+                                      color: isDark
+                                          ? Colors.grey[700]
+                                          : Colors.grey[300],
+                                      thickness: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ComplaintFormBuilders.buildNameField(
+                                  context, state),
+                              const SizedBox(height: 8),
+                              ComplaintFormBuilders.buildDateOfBirthField(
+                                  context, state),
+                              const SizedBox(height: 8),
+                              ComplaintFormBuilders.buildPhoneField(
+                                  context, state),
+                              const SizedBox(height: 8),
+                              ComplaintFormBuilders.buildEmailField(
+                                  context, state),
+                              const SizedBox(height: 8),
+                              ComplaintFormBuilders.buildAddressField(
+                                  context, state),
+                              const SizedBox(height: 12),
+                              FileUploadWidget(
+                                  state: state as ComplaintFormProvider),
+                              const SizedBox(height: 12),
+                              ComplaintFormBuilders.buildComplaintField(
+                                  context, state),
+                              const SizedBox(height: 16),
+                              _buildSubmitButton(context, state),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          children: [
-                            ComplaintFormBuilders.buildNameField(context, state),
-                            const SizedBox(height: 8),
-                            ComplaintFormBuilders.buildDateOfBirthField(context, state),
-                            const SizedBox(height: 8),
-                            ComplaintFormBuilders.buildPhoneField(context, state),
-                            const SizedBox(height: 8),
-                            ComplaintFormBuilders.buildEmailField(context, state),
-                            const SizedBox(height: 8),
-                            ComplaintFormBuilders.buildAddressField(context, state),
-                            const SizedBox(height: 12),
-                            FileUploadWidget(state: state as ComplaintFormProvider),
-                            const SizedBox(height: 12),
-                            ComplaintFormBuilders.buildComplaintField(context, state),
-                            const SizedBox(height: 16),
-                            _buildSubmitButton(context, state),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           );
         },
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return myAppbar(
-      const Color(0xFF003366),
-      isAdmin: false,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: _buildAppBarTitle(),
-      centerTitle: true,
-      height: 60,
-    );
-  }
-
-  Widget _buildAppBarTitle() {
-    return Padding(
-      padding: const EdgeInsets.only(right: 41),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(90),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            child: Row(
-              children: [
-                logoWidget('assets/MarineGuard-Logo-preview.png', 80, 80),
-                const SizedBox(width: 8.0),
-                const Text(
-                  'Marine Guard',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20.0,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -178,24 +202,45 @@ class ReusableComplaintPage extends StatelessWidget {
         ],
       ),
       child: ElevatedButton(
-        onPressed: () => state.submitForm(context),
+        onPressed:
+            state.isSubmitting ? null : () => state.submitComplaint(context),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
+          backgroundColor: Colors.blue[800],
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: const Text(
-          'Submit',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            letterSpacing: 0.5,
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
+        child: state.isSubmitting
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Form Submitting...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              )
+            : const Text(
+                'Submit Complaint',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }
@@ -213,7 +258,8 @@ class FileUploadWidget extends StatefulWidget {
   State<FileUploadWidget> createState() => _FileUploadWidgetState();
 }
 
-class _FileUploadWidgetState extends State<FileUploadWidget> with SingleTickerProviderStateMixin {
+class _FileUploadWidgetState extends State<FileUploadWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
   @override
@@ -227,11 +273,37 @@ class _FileUploadWidgetState extends State<FileUploadWidget> with SingleTickerPr
 
   @override
   void dispose() {
-    if (_animationController.isAnimating) {
-      _animationController.stop();
-    }
     _animationController.dispose();
     super.dispose();
+  }
+
+  void showToastMessage(bool isSuccess) {
+    Fluttertoast.showToast(
+      msg: isSuccess
+          ? 'File Added Successfully'
+          : 'Invalid file type. Please select an image, video, or document.',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      timeInSecForIosWeb: 2,
+      backgroundColor: isSuccess ? Colors.green : Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  void _handleFileSelection(BuildContext context, File file) {
+    if (!mounted) return;
+
+    if (CloudinaryService.isValidFileType(file.path)) {
+      widget.state.addFile(file);
+      if (mounted) {
+        showToastMessage(true);
+      }
+    } else {
+      if (mounted) {
+        showToastMessage(false);
+      }
+    }
   }
 
   @override
@@ -278,7 +350,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> with SingleTickerPr
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap to upload images, videos, or documents',
+              'Tap to upload images, videos',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -331,31 +403,6 @@ class _FileUploadWidgetState extends State<FileUploadWidget> with SingleTickerPr
         onFileSelected: (file) => _handleFileSelection(context, file),
       ),
     );
-  }
-
-  void _handleFileSelection(BuildContext context, File file) {
-    if (!mounted) return;
-    
-    if (CloudinaryService.isValidFileType(file.path)) {
-      widget.state.addFile(file);
-      if (mounted) {
-        ReusableComplaintPage.scaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            content: Text('File added successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } else {
-      if (mounted) {
-        ReusableComplaintPage.scaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            content: Text('Invalid file type. Please select an image, video, or document.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }
 
@@ -495,7 +542,8 @@ class _UploadOptionsSheet extends StatelessWidget {
 
   Future<void> _pickVideo(BuildContext context) async {
     Navigator.pop(context);
-    final pickedFile = await ImagePicker().pickVideo(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (pickedFile != null) {
       onFileSelected(File(pickedFile.path));
     }

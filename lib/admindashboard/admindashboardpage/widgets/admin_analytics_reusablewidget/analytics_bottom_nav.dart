@@ -14,7 +14,9 @@ class AnalyticsBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      height: 70,
+      padding: const EdgeInsets.only(bottom: 8, top: 8),
+      margin: const EdgeInsets.only(top: 15),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

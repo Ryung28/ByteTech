@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 import 'package:mobileapplication/reusable_widget/bottom_nav_bar.dart';
+import 'package:go_router/go_router.dart';
 
 class MarineEducationPage extends StatefulWidget {
   final bool isAdmin;
@@ -29,13 +31,27 @@ class _MarineEducationPageState extends State<MarineEducationPage> {
   }
 
   Future<void> _loadContent() async {
-    setState(() {
-      switch (widget.category) {
-        case 'Marine Life':
-          _titleController.text =
-              'Marine Life: Understanding Our Ocean\'s Creatures';
-          _contentController.text = '''
-Marine life encompasses the countless species that inhabit our oceans, from microscopic plankton to massive whales.
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('ocean_education')
+          .where('category', isEqualTo: widget.category)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _titleController.text = data['title'] ?? '';
+          _contentController.text = data['content'] ?? '';
+        });
+      } else {
+        // Load default content if no custom content exists
+        setState(() {
+          switch (widget.category) {
+            case 'Marine Life':
+              _titleController.text = 'Marine Life: Understanding Our Ocean\'s Creatures';
+              _contentController.text = '''Marine life encompasses the countless species that inhabit our oceans, from microscopic plankton to massive whales.
 
 Key Marine Life Categories:
 • Fish Species
@@ -59,13 +75,11 @@ Conservation Status:
 • Monitoring efforts
 
 Understanding marine life is crucial for maintaining healthy ocean ecosystems and ensuring sustainable marine resource management.''';
-          break;
+              break;
 
-        case 'Conservation':
-          _titleController.text =
-              'Ocean Conservation: Protecting Marine Ecosystems';
-          _contentController.text = '''
-Ocean conservation is vital for maintaining the health of our marine ecosystems and protecting biodiversity.
+            case 'Conservation':
+              _titleController.text = 'Ocean Conservation: Protecting Marine Ecosystems';
+              _contentController.text = '''Ocean conservation is vital for maintaining the health of our marine ecosystems and protecting biodiversity.
 
 Key Conservation Areas:
 • Coral reef protection
@@ -89,12 +103,11 @@ How You Can Help:
 • Educate others
 
 Together, we can make a difference in protecting our oceans for future generations.''';
-          break;
+              break;
 
-        case 'Regulations':
-          _titleController.text = 'Marine Laws and Regulations';
-          _contentController.text = '''
-Understanding marine laws and regulations is essential for protecting our ocean resources.
+            case 'Regulations':
+              _titleController.text = 'Marine Laws and Regulations';
+              _contentController.text = '''Understanding marine laws and regulations is essential for protecting our ocean resources.
 
 Key Regulatory Areas:
 • Fishing licenses
@@ -118,12 +131,11 @@ Compliance Guidelines:
 • Penalties for violations
 
 Stay informed about marine regulations to help protect our ocean resources.''';
-          break;
+              break;
 
-        default:
-          _titleController.text = 'Understanding Overfishing: A Global Crisis';
-          _contentController.text = '''
-Overfishing is a critical environmental challenge that threatens marine ecosystems, biodiversity, and the livelihoods of millions of people who depend on fishing.
+            default:
+              _titleController.text = 'Understanding Overfishing: A Global Crisis';
+              _contentController.text = '''Overfishing is a critical environmental challenge that threatens marine ecosystems, biodiversity, and the livelihoods of millions of people who depend on fishing.
 
 Key Impacts of Overfishing:
 • Disruption of marine food chains
@@ -145,22 +157,59 @@ Prevention Strategies:
 • Raise awareness about marine conservation
 
 Our mission is to educate and empower communities to protect marine resources and ensure a sustainable future for our oceans.''';
+          }
+        });
       }
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading content: $e')),
+      );
+    }
   }
 
   Future<void> _saveContent() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isEditing = false;
-      });
+      try {
+        final collection = FirebaseFirestore.instance.collection('ocean_education');
+        final snapshot = await collection
+            .where('category', isEqualTo: widget.category)
+            .get();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Content saved successfully'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+        if (snapshot.docs.isNotEmpty) {
+          // Update existing document
+          await collection.doc(snapshot.docs.first.id).update({
+            'title': _titleController.text,
+            'content': _contentController.text,
+            'lastModified': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Create new document
+          await collection.add({
+            'category': widget.category,
+            'title': _titleController.text,
+            'content': _contentController.text,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+
+        setState(() {
+          _isEditing = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Content saved successfully'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving content: $e'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -173,214 +222,209 @@ Our mission is to educate and empower communities to protect marine resources an
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 275.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: Colors.blue,
-            leading: myIconbutton(
-              Icons.arrow_back,
-              colors: Colors.white,
-              () => Navigator.of(context).pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              title: myText(
-                widget.category,
-                labelstyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        extendBody: true,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 275.0,
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.blue,
+              flexibleSpace: FlexibleSpaceBar(
+                title: myText(
+                  widget.category,
+                  labelstyle: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.blue,
-                      Colors.blue.shade700,
+                background: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.blue,
+                        Colors.blue.shade700,
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Opacity(
+                        opacity: 1,
+                        child: Image.asset(
+                          'assets/EducationalInfoBackground.jpg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            myIcon(
+                              Icons.waves_outlined,
+                              color: Colors.white,
+                              size: 80,
+                            ),
+                            SizedBox(height: 16),
+                            myText(
+                              'Protecting Our Oceans',
+                              labelstyle: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Opacity(
-                      opacity: 1,
-                      child: Image.asset(
-                        'assets/EducationalInfoBackground.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          myIcon(
-                            Icons.waves_outlined,
-                            color: Colors.white,
-                            size: 80,
-                          ),
-                          SizedBox(height: 16),
-                          myText(
-                            'Protecting Our Oceans',
-                            labelstyle: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                centerTitle: true,
               ),
-              centerTitle: true,
+              actions: widget.isAdmin
+                  ? [
+                      myIconbutton(
+                        _isEditing ? Icons.save : Icons.edit,
+                        _isEditing ? _saveContent : _toggleEdit,
+                      ),
+                    ]
+                  : null,
             ),
-            actions: widget.isAdmin
-                ? [
-                    myIconbutton(
-                      _isEditing ? Icons.save : Icons.edit,
-                      _isEditing ? _saveContent : _toggleEdit,
+            SliverToBoxAdapter(
+              child: Form(
+                key: _formKey,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Card(
+                    elevation: 12,
+                    color: Theme.of(context).cardColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ]
-                : null,
-          ),
-          SliverToBoxAdapter(
-            child: Form(
-              key: _formKey,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Card(
-                  elevation: 12,
-                  color: Theme.of(context).cardColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_isEditing && widget.isAdmin) ...[
-                          myTextform(
-                              controller: _titleController,
-                              style: TextStyle(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isEditing && widget.isAdmin) ...[
+                            myTextform(
+                                controller: _titleController,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                inputDecoration: InputDecoration(
+                                  labelText: 'Title',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                ),
+                                validation: 'Please Enter Title'),
+                            SizedBox(height: 20),
+                            myTextform(
+                                controller: _contentController,
+                                maxLines: null,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color:
+                                      Theme.of(context).colorScheme.onBackground,
+                                  height: 1.5,
+                                ),
+                                inputDecoration: InputDecoration(
+                                  labelText: 'Content',
+                                  alignLabelWithHint: true,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                ),
+                                validation: 'Please Enter Content'),
+                          ] else ...[
+                            myText(
+                              _titleController.text,
+                              labelstyle: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
-                              inputDecoration: InputDecoration(
-                                labelText: 'Title',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              validation: 'Please Enter Title'),
-                          SizedBox(height: 20),
-                          myTextform(
-                              controller: _contentController,
-                              maxLines: null,
-                              style: TextStyle(
+                            ),
+                            SizedBox(height: 16),
+                            myText(
+                              _contentController.text,
+                              labelstyle: TextStyle(
                                 fontSize: 16,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onBackground,
                                 height: 1.5,
                               ),
-                              inputDecoration: InputDecoration(
-                                labelText: 'Content',
-                                alignLabelWithHint: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
+                            ),
+                          ],
+                          SizedBox(height: 24),
+                          if (!_isEditing)
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.shade100,
+                                    Colors.teal.shade100,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                              ),
-                              validation: 'Please Enter Content'),
-                        ] else ...[
-                          myText(
-                            _titleController.text,
-                            labelstyle: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          myText(
-                            _contentController.text,
-                            labelstyle: TextStyle(
-                              fontSize: 16,
-                              color: Theme.of(context).colorScheme.onBackground,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                        SizedBox(height: 24),
-                        if (!_isEditing)
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blue.shade100,
-                                  Colors.teal.shade100,
+                                borderRadius: BorderRadius.circular(15),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.shade200.withOpacity(0.5),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: Offset(0, 3),
+                                  ),
                                 ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(15),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blue.shade200.withOpacity(0.5),
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.blue.shade700,
-                                  child: Icon(Icons.warning_outlined,
-                                      color: Colors.white),
-                                ),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: myText(
-                                    'Every action counts. Together, we can prevent overfishing and protect our marine ecosystems.',
-                                    labelstyle: TextStyle(
-                                      color: Colors.blue.shade700,
-                                      fontStyle: FontStyle.italic,
-                                      fontWeight: FontWeight.w600,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.blue.shade700,
+                                    child: Icon(Icons.warning_outlined,
+                                        color: Colors.white),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: myText(
+                                      'Every action counts. Together, we can prevent overfishing and protect our marine ecosystems.',
+                                      labelstyle: TextStyle(
+                                        color: Colors.blue.shade700,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: 20),
-        child: FloatingNavBar(
-          currentIndex: 1,
-          backgroundColor: Colors.transparent,
+          ],
         ),
-      ),
-    );
+        bottomNavigationBar: Padding(
+          padding: EdgeInsets.only(bottom: 20),
+          child: FloatingNavBar(
+            currentIndex: 1,
+            backgroundColor: Colors.transparent,
+          ),
+        ),
+      );
   }
 
   @override

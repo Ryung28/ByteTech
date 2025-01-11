@@ -4,22 +4,14 @@ import 'package:mobileapplication/models/usermanagementmodel.dart';
 class UserManagementWidgets {
   static Widget buildHeader(BuildContext context, String title) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

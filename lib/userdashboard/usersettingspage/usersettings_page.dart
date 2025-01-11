@@ -35,10 +35,10 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
     });
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 90,
@@ -75,6 +75,87 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
     }
   }
 
+  void _showImageSourceSelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? ThemeConfig.darkBackground
+          : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (isDark ? ThemeConfig.darkBlueAccent : _settingsProvider?.deepBlue ?? Colors.blue).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: isDark ? ThemeConfig.darkBlueAccent : _settingsProvider?.deepBlue,
+                  ),
+                ),
+                title: Text(
+                  'Take a photo',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (isDark ? ThemeConfig.darkBlueAccent : _settingsProvider?.deepBlue ?? Colors.blue).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.photo_library,
+                    color: isDark ? ThemeConfig.darkBlueAccent : _settingsProvider?.deepBlue,
+                  ),
+                ),
+                title: Text(
+                  'Choose from gallery',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showAboutApp() {
     showDialog(
       context: context,
@@ -96,14 +177,107 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Terms & Conditions'),
-        content: const SingleChildScrollView(
-          child: Text('Your terms and conditions text here...'),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1A237E)
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Terms & Conditions',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : const Color(0xFF1A237E),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPrivacySection(
+                  'Last Updated: December 2024',
+                  isDate: true,
+                  context: context,
+                ),
+                const SizedBox(height: 16),
+                _buildPrivacySection(
+                  '1. Acceptance of Terms',
+                  content: [
+                    'By accessing and using Marine Guard, you agree to be bound by these terms and conditions. If you disagree with any part of these terms, you may not access the application.',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '2. User Responsibilities',
+                  content: [
+                    'You must provide accurate and complete information when creating an account',
+                    'You are responsible for maintaining the confidentiality of your account',
+                    'You agree to use the app in compliance with local fishing and marine protection laws',
+                    'You must not use the app for any illegal or unauthorized purpose',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '3. Ban Period Compliance',
+                  content: [
+                    'You agree to respect and comply with all fishing ban periods',
+                    'You acknowledge that ban periods are enforced to protect marine life',
+                    'Violation of ban periods may result in account suspension',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '4. Privacy & Data',
+                  content: [
+                    'We collect and process your data as described in our Privacy Policy',
+                    'Your location data may be used to provide relevant marine information',
+                    'We may share aggregated, non-personal data for research purposes',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '5. Modifications',
+                  content: [
+                    'We reserve the right to modify these terms at any time. We will notify users of any changes through the app.',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '6. Disclaimer',
+                  content: [
+                    'Marine Guard is provided "as is" without any warranties. We do not guarantee the accuracy of marine data or weather information.',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  '7. Contact',
+                  content: [
+                    'Email: marineguard.ph@gmail.com',
+                    'Website: https://marineguard-admin.website/',
+                    'Address: Marine Guard Team',
+                  ],
+                  context: context,
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(
+              'Close',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color(0xFF1A237E),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -114,15 +288,185 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: const SingleChildScrollView(
-          child: Text('Your privacy policy text here...'),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1A237E)
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Privacy Policy',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : const Color(0xFF1A237E),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPrivacySection(
+                  'Last Updated: December 2024',
+                  isDate: true,
+                  context: context,
+                ),
+                const SizedBox(height: 16),
+                _buildPrivacySection(
+                  'Information We Collect',
+                  content: [
+                    'Personal Information (name, email, profile picture)',
+                    'Location Data for marine conditions',
+                    'Device information and app usage statistics',
+                    'Fishing activity and ban period compliance data',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  'How We Use Your Information',
+                  content: [
+                    'Provide marine protection services and updates',
+                    'Monitor and enforce ban period compliance',
+                    'Improve app features and user experience',
+                    'Send important notifications about marine conditions',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  'Data Security',
+                  content: [
+                    'End-to-end encryption for personal data',
+                    'Regular security audits and updates',
+                    'Secure cloud storage with Firebase',
+                    'Limited employee access to user data',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  'Information Sharing',
+                  content: [
+                    'We never sell your personal information',
+                    'Data may be shared with marine protection authorities',
+                    'Anonymous analytics for app improvement',
+                    'Third-party service providers (storage, analytics)',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  'Your Rights',
+                  content: [
+                    'Access your personal data',
+                    'Request data correction or deletion',
+                    'Opt-out of non-essential communications',
+                    'Data portability options',
+                  ],
+                  context: context,
+                ),
+                _buildPrivacySection(
+                  'Contact Us',
+                  content: [
+                    'Email: marineguard.ph@gmail.com',
+                    'Website: https://marineguard-admin.website/',
+                    'Address: Marine Guard Team',
+                  ],
+                  context: context,
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(
+              'Close',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color(0xFF1A237E),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullScreenProfile(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FullScreenProfileView(
+          imageUrl: imageUrl,
+          username: _settingsProvider?.username ?? '',
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildPrivacySection(
+    String title, {
+    List<String>? content,
+    bool isDate = false,
+    required BuildContext context,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.1)
+            : const Color(0xFF1A237E).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF1A237E),
+              fontWeight: isDate ? FontWeight.normal : FontWeight.bold,
+              fontSize: isDate ? 14 : 18,
+              fontStyle: isDate ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+          if (content != null) ...[
+            const SizedBox(height: 8),
+            ...content.map((item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF1A237E),
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )).toList(),
+          ],
         ],
       ),
     );
@@ -202,7 +546,8 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
                           username: provider.username,
                           email: provider.email,
                           profilePicture: provider.profilePictureUrl,
-                          onImageTap: _pickImage,
+                          onImageTap: () => _showFullScreenProfile(provider.profilePictureUrl),
+                          onCameraTap: _showImageSourceSelection,
                           deepBlue: isDark 
                               ? ThemeConfig.darkBlueAccent  // Glowing blue color
                               : provider.deepBlue,
@@ -244,6 +589,7 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
                                       color: isDark 
                                           ? ThemeConfig.darkBlueAccent  // Glowing blue color
                                           : provider.deepBlue,
+                                      context: context,
                                     ),
                                     buildThemeToggle(context),
                                   ],
@@ -265,6 +611,7 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
                                       color: isDark 
                                           ? ThemeConfig.darkBlueAccent  // Glowing blue color
                                           : provider.deepBlue,
+                                      context: context,
                                     ),
                                     UserSettingsWidgets.buildSettingsTile(
                                       icon: Icons.description_outlined,
@@ -277,6 +624,7 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
                                       color: isDark 
                                           ? ThemeConfig.darkBlueAccent  // Glowing blue color
                                           : provider.deepBlue,
+                                      context: context,
                                     ),
                                     UserSettingsWidgets.buildSettingsTile(
                                       icon: Icons.privacy_tip_outlined,
@@ -289,6 +637,7 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
                                       color: isDark 
                                           ? ThemeConfig.darkBlueAccent  // Glowing blue color
                                           : provider.deepBlue,
+                                      context: context,
                                     ),
                                   ],
                                   deepBlue: isDark 
@@ -518,8 +867,93 @@ class _UsersettingsPageState extends State<UsersettingsPage> {
     return CircleAvatar(
       radius: 50,
       backgroundImage: NetworkImage(imageUrl),
-      onBackgroundImageError: (_, __) {},
+      onBackgroundImageError: (_, __) {} ,
       child: imageUrl.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
+    );
+  }
+}
+
+class FullScreenProfileView extends StatelessWidget {
+  final String imageUrl;
+  final String username;
+
+  const FullScreenProfileView({
+    Key? key,
+    required this.imageUrl,
+    required this.username,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Scaffold(
+      backgroundColor: isDark ? ThemeConfig.darkBackground : Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.white,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          username,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Center(
+        child: Hero(
+          tag: 'profile-$imageUrl',
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        : null,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? ThemeConfig.darkBlueAccent : Colors.white,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error loading image',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

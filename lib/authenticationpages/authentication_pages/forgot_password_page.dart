@@ -1,6 +1,6 @@
+// ignore_for_file: use_super_parameters
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobileapplication/authenticationpages/authentication_pages/forgot_password_logic.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 import 'package:mobileapplication/authenticationpages/loginpage/reusable_loginpage.dart';
@@ -97,14 +97,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
-                        // Outer shadow
                         BoxShadow(
                           color: Colors.black.withOpacity(0.03),
                           blurRadius: 40,
                           spreadRadius: 10,
                           offset: const Offset(0, 20),
                         ),
-                        // Inner shadow
                         BoxShadow(
                           color: primaryColor.withOpacity(0.05),
                           blurRadius: 20,
@@ -291,10 +289,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                         ),
                                       ).copyWith(
                                         backgroundColor:
+                                            // ignore: deprecated_member_use
                                             MaterialStateProperty.resolveWith(
                                           (states) {
                                             if (states.contains(
-                                                MaterialState.disabled)) {
+                                                WidgetState.disabled)) {
                                               return Colors.grey.shade300;
                                             }
                                             return primaryColor;

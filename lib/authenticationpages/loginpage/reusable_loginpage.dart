@@ -1,12 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_page.dart';
-import 'package:mobileapplication/firebase/loginfirestore.dart';
+import 'package:mobileapplication/authenticationpages/loginpage/loginfirestore.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 import 'package:mobileapplication/userdashboard/userdashboardpage/user_dashboard.dart';
 import 'package:mobileapplication/authenticationpages/authentication_pages/forgot_password_page.dart';
@@ -47,10 +46,9 @@ class LoginForm extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Calculate responsive logo size
-    final double logoSize = screenHeight * 0.2;
-    final double maxLogoSize = screenWidth * 0.4;
-    final double finalLogoSize =
-        logoSize > maxLogoSize ? maxLogoSize : logoSize;
+    final double logoSize = screenHeight * 0.15;
+    final double maxLogoSize = screenWidth * 0.3;
+    final double finalLogoSize = logoSize > maxLogoSize ? maxLogoSize : logoSize;
 
     return Form(
       key: formKey,
@@ -58,10 +56,15 @@ class LoginForm extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!isKeyboardVisible) ...[
-            logoWidget(
-              'assets/MarineGuard-Logo-preview.png',
-              finalLogoSize,
-              finalLogoSize,
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: logoWidget(
+                Theme.of(context).brightness == Brightness.dark
+                    ? 'assets/MarineGuard-Logo-preview.png'
+                    : 'assets/MarineGuard-Logo-preview.png',
+                finalLogoSize,
+                finalLogoSize,
+              ),
             ),
             myText('Login'),
           ],
@@ -97,21 +100,21 @@ class LoginForm extends StatelessWidget {
                       color: Colors.grey.shade600,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(
                         color: Color.fromARGB(255, 25, 115, 232),
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.red.shade300),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.red.shade400),
                     ),
                   ),
@@ -151,45 +154,36 @@ class LoginForm extends StatelessWidget {
                       onPressed: togglePasswordVisibility,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(
                         color: Color.fromARGB(255, 25, 115, 232),
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.red.shade300),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.red.shade400),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: myButton2(
-                    context,
-                    isLoading ? 'Logging in...' : 'Login',
-                    isLoading ? null : onLogin,
-                    labelStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      decoration: TextDecoration.underline,
-                      decorationThickness: 2,
-                      decorationColor: Colors.white,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isLoading
-                          ? Colors.grey
-                          : const Color.fromARGB(255, 34, 38, 71),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: socialLoginButton(
+                    onPressed: isLoading ? () {} : onLogin,
+
+                    label: isLoading ? 'Logging in...' : 'Login',
+                    backgroundColor: const Color.fromARGB(255, 34, 38, 71),
+                    textColor: Colors.white,
+                    width: double.infinity,
+                    iconSize: 45,
                   ),
                 ),
                 socialLoginButtons(
@@ -224,8 +218,6 @@ class LoginForm extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
                           letterSpacing: 0.3,
                           decoration: TextDecoration.none,
                           shadows: [
@@ -368,44 +360,24 @@ Widget socialLoginButtons({
   required Function(bool) setLoading,
   required bool mounted,
 }) {
-  return Column(
-    children: [
-      const SizedBox(height: 10),
-      // ignore: sized_box_for_whitespace
-      Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 50,
-        child: ElevatedButton.icon(
-          onPressed: isLoading
-              ? null
-              : () => OAuthHandler.handleGoogleSignIn(
-                    context: context,
-                    setLoading: setLoading,
-                    mounted: mounted,
-                  ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black87,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          icon: Image.asset(
-            'assets/google-logo.png',
-            height: 24,
-            width: 24,
-          ),
-          label: const Text(
-            'Continue with Google',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    ],
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    child: socialLoginButton(
+      onPressed: () {
+        if (!isLoading) {
+          OAuthHandler.handleGoogleSignIn(
+            context: context,
+            setLoading: setLoading,
+            mounted: mounted,
+          );
+        }
+      },
+      icon: 'assets/google-logo.png',
+      label: 'Continue with Google',
+      backgroundColor: Colors.white,
+      textColor: Colors.black87,
+      width: double.infinity,
+    ),
   );
 }
 
@@ -421,68 +393,132 @@ mixin LoginHandler {
     required Function(bool) setLoading,
     required bool mounted,
   }) async {
-    if (!formKey.currentState!.validate()) {
+    if (!_validateLoginInput(
+        context, formKey, emailController, passwordController)) {
       return;
     }
-
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-
-    if (email.isEmpty || password.isEmpty) {
-      showErrorModal(
-          context, 'Missing Information', 'Please fill in all fields');
-      return;
-    }
-
-    setLoading(true);
 
     try {
-      final UserCredential userCredential =
-          await auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      setLoading(true);
 
-      if (!mounted) return;
-
-      final userData = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
-
-      if (!mounted) return;
-
-      if (userData.exists) {
-        final bool isAdmin = userData.data()?['isAdmin'] ?? false;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                isAdmin ? const AdmindashboardPage() : const UserDashboard(),
-          ),
-        );
-      } else {
-        showErrorModal(context, 'Error', 'User data not found.');
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      String message = 'An error occurred while trying to log in.';
-
-      if (e.code == 'user-not-found') {
-        message = 'No user found with this email.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Invalid password.';
+      // Show loading indicator using a separate method
+      if (mounted) {
+        _showLoadingDialog(context);
       }
 
-      showErrorModal(context, 'Login Failed', message);
+      // Handle login in a separate isolate or compute
+      await Future(() async {
+        final userCredential = await authService
+            .signInWithEmailAndPassword(
+              email: emailController.text.trim(),
+              password: passwordController.text,
+            )
+            .timeout(
+              const Duration(seconds: 15),
+              onTimeout: () => throw TimeoutException('Login timeout'),
+            );
+
+        if (!mounted) return;
+
+        // Get user data
+        final userData =
+            await authService.getUserData(userCredential.user!.uid);
+
+        if (!mounted) return;
+
+        // Pop loading dialog and handle success
+        Navigator.of(context).pop(); // Remove loading dialog
+        await _handleLoginSuccess(context, userData);
+      }).catchError((error) {
+        if (mounted) {
+          Navigator.of(context).pop(); // Remove loading dialog
+          _showErrorSnackbar(context, error.toString());
+        }
+      });
     } catch (e) {
-      if (!mounted) return;
-      showErrorModal(context, 'Login Failed',
-          'An error occurred while trying to log in. Please try again.');
+      if (mounted) {
+        Navigator.of(context).pop(); // Remove loading dialog
+        _showErrorSnackbar(context, e.toString());
+      }
     } finally {
       if (mounted) {
         setLoading(false);
       }
     }
+  }
+
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: const Center(
+            child: Card(
+              color: Colors.white,
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Logging in...'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _validateLoginInput(
+    BuildContext context,
+    GlobalKey<FormState> formKey,
+    TextEditingController emailController,
+    TextEditingController passwordController,
+  ) {
+    if (!formKey.currentState!.validate()) return false;
+
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _handleLoginSuccess(
+    BuildContext context,
+    DocumentSnapshot userData,
+  ) async {
+    if (!userData.exists) {
+      _showErrorSnackbar(context, 'User data not found');
+      return;
+    }
+
+    final bool isAdmin = userData.get('isAdmin') ?? false;
+
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            isAdmin ? const AdmindashboardPage() : const UserDashboard(),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/modern_loading_animation.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/providers/analytics_provider.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/providers/reports_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/active_bans_chart.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/reports_chart.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/reportanalytics/reports_chart.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/user_activity_chart.dart';
-import 'package:mobileapplication/reusable_widget/loading_animation_admin_analytics.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/providers/analytics_provider.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/analytics_bottom_nav.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/analytics_error_view.dart';
 
@@ -19,6 +20,12 @@ class _AnalyticsOverviewState extends State<AnalyticsOverview> {
   final PageController _pageController = PageController();
 
   @override
+  void initState() {
+    super.initState();
+    print('Initializing AnalyticsOverview');
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -26,41 +33,69 @@ class _AnalyticsOverviewState extends State<AnalyticsOverview> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AnalyticsProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
+        ChangeNotifierProxyProvider<AnalyticsProvider, ReportsProvider>(
+          create: (_) => ReportsProvider(),
+          update: (_, analyticsProvider, previousReportsProvider) {
+            final reportsProvider = previousReportsProvider ?? ReportsProvider();
+            if (analyticsProvider.hasData && analyticsProvider.analyticsData != null) {
+              reportsProvider.updateChartData(analyticsProvider.analyticsData!);
+            }
+            return reportsProvider;
+          },
+        ),
+      ],
       child: Consumer<AnalyticsProvider>(
         builder: (context, provider, _) {
+          print('Building AnalyticsOverview. Loading: ${provider.isLoading}, HasData: ${provider.hasData}, Error: ${provider.error}');
+
           if (provider.error != null) {
-            return const AnalyticsErrorView();
+            print('Error in AnalyticsOverview: ${provider.error}');
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${provider.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => provider.retry(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
 
           if (provider.isLoading) {
-            return const ModernLoadingAnimation();
-          }
-
-          if (!provider.hasData) {
-            return const Center(child: Text('No data available'));
+            return const Center(child: ModernLoadingAnimation());
           }
 
           return Column(
             children: [
               Expanded(
-                child: Container(
-                  margin: EdgeInsets.zero,
-                  padding: EdgeInsets.zero,
-                  child: PageView(
-                    physics: const BouncingScrollPhysics(),
-                    controller: _pageController,
-                    onPageChanged: (page) => provider.setCurrentPage(page),
-                    children: [
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    provider.setCurrentPage(index);
+                  },
+                  children: [
+                    if (provider.analyticsData != null) ...[
                       UserActivityChart(data: provider.analyticsData!),
-                      ReportsChart(data: provider.analyticsData!),
+                      const ReportsChart(),
                       ActiveBansChart(data: provider.analyticsData!),
+                    ] else ...[
+                      const Center(child: Text('No data available')),
+                      const Center(child: Text('No data available')),
+                      const Center(child: Text('No data available')),
                     ],
-                  ),
+                  ],
                 ),
               ),
-              AnalyticsBottomNav(pageController: _pageController),
+              AnalyticsBottomNav(
+                pageController: _pageController,
+              ),
             ],
           );
         },

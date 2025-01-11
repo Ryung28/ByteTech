@@ -1,9 +1,108 @@
 import 'package:flutter/material.dart';
-import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
-import 'package:mobileapplication/userdashboard/banperiodcalender_page.dart';
+import 'package:mobileapplication/userdashboard/banperioidpage/banperiodcalender_page.dart';
 import 'package:mobileapplication/userdashboard/ocean_education.dart';
+import 'package:intl/intl.dart';
 
 class UserDashboardWidgets {
+  static Widget navbarHeader(
+    String userName,
+    bool isLoading,
+    Color textColor,
+    Color surfaceBlue,
+    Color whiteWater,
+    String? userPhotoUrl,
+    String currentQuote,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: const Color(0xFF4A80F0).withOpacity(0.1),
+                        backgroundImage: userPhotoUrl != null && userPhotoUrl.isNotEmpty
+                            ? NetworkImage(userPhotoUrl)
+                            : null,
+                        child: userPhotoUrl == null || userPhotoUrl.isEmpty
+                            ? Icon(Icons.person, color: const Color(0xFF4A80F0), size: 32)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome back,',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: const Color(0xFF4A80F0).withOpacity(0.9),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isLoading ? 'Loading...' : userName,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4A80F0),
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (currentQuote.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 12, right: 48),
+                      child: Text(
+                        currentQuote,
+                        style: TextStyle(
+                          color: const Color(0xFF4A80F0).withOpacity(0.8),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget buildCompactMarineCondition(IconData icon, String value,
       String label, bool isWhite, Color deepBlue, Color whiteWater) {
     Color textColor = isWhite ? whiteWater : Colors.black87;
@@ -184,141 +283,24 @@ class UserDashboardWidgets {
     );
   }
 
-  static Widget navbarHeader(
-    String userName,
-    bool isLoading,
-    Color deepBlue,
-    Color surfaceBlue,
-    Color whiteWater,
-    VoidCallback onNotificationPressed,
-  ) {
-    // Function to truncate username if it's too long
-    String formatUsername(String name) {
-      if (name.length > 30) {  // Adjust this number as needed
-        return '${name.substring(0, 8)}...';  // Show first 12 chars + ellipsis
-      }
-      return name;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 5,
-        vertical: 12,
-      ),
-      decoration: BoxDecoration(
-        color: whiteWater,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: deepBlue.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: logoWidget(
-                    'assets/MarineGuard-Logo-preview.png',
-                    80,
-                    80,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,  // Give more space to the text section
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      myText(
-                        'Welcome back,',
-                        labelstyle: const TextStyle(
-                          color: Color.fromARGB(255, 78, 133, 228),
-                          fontSize: 13,
-                          fontFamily: "Poppins",
-                        ),
-                      ),
-                      Text(
-                        isLoading ? "Loading..." : formatUsername(userName),  // Use the format function
-                        style: const TextStyle(
-                          color: Color.fromARGB(255, 78, 133, 228),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          fontFamily: "Poppins",
-                        ),
-                        softWrap: true,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'It takes courage to grow up and become who you really are.',
-                        style: TextStyle(
-                          color: deepBlue.withOpacity(0.9),
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                          height: 1.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Notification button in a separate container
-          Container(
-            margin: const EdgeInsets.only(right: 5),
-            padding: const EdgeInsets.all(1),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: deepBlue.withOpacity(0.05),
-                width: 0.5,
-              ),
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
-              icon: Icon(
-                Icons.notifications_rounded,
-                color: Colors.black87,
-                size: 20,
-              ),
-              onPressed: onNotificationPressed,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   static Widget buildBanPeriodCard(
-      String startDate,
-      String endDate,
-      Color surfaceBlue,
-      Color accentBlue,
-      Color whiteWater,
-      BuildContext context) {
+    DateTime? startDate,
+    DateTime? endDate,
+    Color surfaceBlue,
+    Color accentBlue,
+    Color whiteWater,
+    BuildContext context,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final deepBlue = isDark ? Colors.white : const Color(0xFF1A237E);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1A237E), // Much darker blue
-            const Color(0xFF1565C0), // Dark blue
+            const Color(0xFF1A237E),
+            const Color(0xFF1565C0),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
@@ -339,8 +321,11 @@ class UserDashboardWidgets {
             children: [
               Row(
                 children: [
-                  Icon(Icons.notifications_none,
-                      color: isDark ? Colors.white : whiteWater, size: 24),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    color: isDark ? Colors.white : whiteWater,
+                    size: 24,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Ban Period Schedule',
@@ -356,12 +341,16 @@ class UserDashboardWidgets {
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: Icon(Icons.arrow_forward_ios,
-                    color: isDark ? Colors.white : whiteWater, size: 18),
+                icon: Icon(
+                  Icons.arrow_forward_ios,
+                  color: isDark ? Colors.white : whiteWater,
+                  size: 18,
+                ),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const BanPeriodCalendar()),
+                    builder: (context) => const BanPeriodCalendar(isAdmin: false),
+                  ),
                 ),
               ),
             ],
@@ -370,22 +359,68 @@ class UserDashboardWidgets {
           Row(
             children: [
               Expanded(
-                child: buildDateInfo(
-                  'Start Date',
-                  startDate,
-                  isDark ? deepBlue : Colors.green,  // Green for start date
-                  true,
-                  isDark ? deepBlue : whiteWater,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Start Date',
+                        style: TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        startDate != null
+                            ? DateFormat('MMMM d').format(startDate)
+                            : 'Not set',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: buildDateInfo(
-                  'End Date',
-                  endDate,
-                  isDark ? deepBlue : const Color.fromARGB(255, 255, 115, 0),  // Orange for end date
-                  true,
-                  isDark ? deepBlue : whiteWater,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'End Date',
+                        style: TextStyle(
+                          color: Color(0xFFE57373),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        endDate != null
+                            ? DateFormat('MMMM d').format(endDate)
+                            : 'Not set',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -424,6 +459,7 @@ class UserDashboardWidgets {
   ) {
     return Builder(builder: (context) {
       final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -454,9 +490,9 @@ class UserDashboardWidgets {
                           Icon(Icons.sunny, color: deepBlue, size: 24),
                     ),
                     const SizedBox(width: 12),
-                    myText(
+                    Text(
                       'Marine Conditions',
-                      labelstyle: TextStyle(
+                      style: TextStyle(
                         color: deepBlue,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,

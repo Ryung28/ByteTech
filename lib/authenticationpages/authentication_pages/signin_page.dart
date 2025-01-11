@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_page.dart';
 import 'package:mobileapplication/authenticationpages/loginpage/login_page.dart';
 import 'package:mobileapplication/reusable_widget/reusable_widget.dart';
 
@@ -101,32 +100,6 @@ class _MySigninState extends State<MySignin> {
                               ),
                               isResponsive: false),
                         ),
-
-                        // Sign in As Guest Button
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: myButton2(
-                              context,
-                              'Sign in As Guest',
-                              () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const AdmindashboardPage())),
-                              labelStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  decoration: TextDecoration.none),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(60),
-                                color: Colors.transparent,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
-                              ),
-                              isResponsive: false),
-                        )
                       ],
                     ),
                   ),

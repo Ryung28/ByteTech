@@ -1,26 +1,19 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/admin_analytics_overview.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_provider.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/services/admindashboard_firestore.dart';
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/admin_analytics_reusablewidget/user_analytics_chart.dart';
 import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/reusable_admindashboardwidget.dart';
+import 'package:mobileapplication/admindashboard/banpage/banperiodsched.dart';
+import 'package:mobileapplication/admindashboard/banpage/ban_period_activity.dart';
+import 'package:mobileapplication/admindashboard/educationpage/admin_education_page.dart';
+import 'package:mobileapplication/admindashboard/educationpage/education_activity.dart';
+import 'package:mobileapplication/admindashboard/reportpage/reportpage.dart';
+import 'package:mobileapplication/admindashboard/reportpage/widgets/report_analytics_chart.dart';
+import 'package:mobileapplication/admindashboard/settingspage/admin_settings_page.dart';
 import 'package:mobileapplication/admindashboard/usermanagementpage/usermanagement_page.dart';
 import 'package:mobileapplication/config/theme_config.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'package:mobileapplication/admindashboard/providers/admindashboard_provider.dart';
-
-class DashboardItem {
-  final String title;
-  final IconData icon;
-  final List<Color> gradientColors;
-  final VoidCallback onNavigate;
-
-  DashboardItem({
-    required this.title,
-    required this.icon,
-    required this.gradientColors,
-    required this.onNavigate,
-  });
-}
+import 'package:mobileapplication/admindashboard/admindashboardpage/widgets/notification_bell.dart';
 
 class AdmindashboardPage extends StatefulWidget {
   const AdmindashboardPage({super.key});
@@ -29,147 +22,145 @@ class AdmindashboardPage extends StatefulWidget {
   State<AdmindashboardPage> createState() => _AdminDashboardPageState();
 }
 
-class _AdminDashboardPageState extends State<AdmindashboardPage> {
+class _AdminDashboardPageState extends State<AdmindashboardPage> with SingleTickerProviderStateMixin {
   late final List<Widget> _webPages;
-  late final List<DashboardItem> dashboardItems;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  bool _isReportsExpanded = false;
-  bool _isBansExpanded = false;
-  bool _isEducationExpanded = false;
-
-  final List<Map<String, dynamic>> _reportsData = [
+  final AdminDashboardFirestore _dashboardFirestore = AdminDashboardFirestore();
+  String _adminName = 'Admin';
+  String? _adminPhotoUrl;
+  String _lastLogin = 'Today';
+  final List<Map<String, dynamic>> _activitySections = [
     {
-      'title': 'Illegal Fishing Report',
-      'date': '2 hours ago',
-      'status': 'Pending',
-      'statusColor': Colors.orange,
-      'description': 'Reported illegal fishing activity near coral reef area',
+      'title': 'Reports Overview',
+      'icon': Icons.assessment_outlined,
+      'color': const Color(0xFF2196F3),
+      'items': [
+        {
+          'title': 'Latest Report',
+          'time': '2 hours ago',
+          'description': 'Illegal fishing activity near coral reef area',
+          'type': 'report',
+        },
+        {
+          'title': 'Active Reports',
+          'time': 'Current Status',
+          'description': '3 pending reports require review',
+          'type': 'report',
+        },
+      ],
     },
     {
-      'title': 'Water Pollution Alert',
-      'date': '5 hours ago',
-      'status': 'Resolved',
-      'statusColor': Colors.green,
-      'description': 'Oil spill detected and cleaned up in harbor area',
+      'title': 'Bans Overview',
+      'icon': Icons.gavel_outlined,
+      'color': const Color(0xFF2196F3),
+      'items': [
+        {
+          'title': 'Recent Ban',
+          'time': '3 days ago',
+          'description': 'Vessel XYZ-123: Multiple violations',
+          'type': 'ban',
+        },
+        {
+          'title': 'Active Restrictions',
+          'time': 'Current Status',
+          'description': '2 vessels under temporary restrictions',
+          'type': 'ban',
+        },
+      ],
     },
     {
-      'title': 'Unauthorized Vessel',
-      'date': '1 day ago',
-      'status': 'In Progress',
-      'statusColor': Colors.blue,
-      'description': 'Unidentified vessel spotted in protected waters',
+      'title': 'Educational Content',
+      'icon': Icons.school_outlined,
+      'color': const Color(0xFF2196F3),
+      'items': [
+        {
+          'title': 'Latest Update',
+          'time': 'Yesterday',
+          'description': 'Marine Conservation Guidelines revised',
+          'type': 'education',
+        },
+        {
+          'title': 'Recent Addition',
+          'time': '3 days ago',
+          'description': 'New sustainable fishing practices documentation',
+          'type': 'education',
+        },
+      ],
     },
   ];
 
-  final List<Map<String, dynamic>> _bansData = [
-    {
-      'title': 'Vessel XYZ-123',
-      'date': 'Active since: 3 days ago',
-      'status': 'Banned',
-      'statusColor': Colors.red,
-      'description': 'Multiple violations of fishing regulations',
-    },
-    {
-      'title': 'Company ABC Ltd',
-      'date': 'Active since: 1 week ago',
-      'status': 'Temporary Ban',
-      'statusColor': Colors.orange,
-      'description': 'Environmental safety violations',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _educationData = [
-    {
-      'title': 'Marine Conservation Guidelines',
-      'date': 'Published: Yesterday',
-      'status': 'New',
-      'statusColor': Colors.green,
-      'description': 'Updated guidelines for protected marine areas',
-    },
-    {
-      'title': 'Sustainable Fishing Practices',
-      'date': 'Published: 3 days ago',
-      'status': 'Updated',
-      'statusColor': Colors.blue,
-      'description': 'Best practices for sustainable fishing methods',
-    },
-  ];
+  final PageController _pageController = PageController();
+  late final ValueNotifier<int> _currentPageNotifier;
 
   @override
   void initState() {
     super.initState();
-    _initializeDashboardItems();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+    _currentPageNotifier = ValueNotifier<int>(0);
     _initializeWebPages();
+    _initializeData();
   }
 
-  void _initializeDashboardItems() {
-    dashboardItems = _createDashboardItems();
+  void _initializeData() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardProvider>().initializeData();
+      _loadAdminData();
+    });
   }
 
-  List<DashboardItem> _createDashboardItems() => [
-        DashboardItem(
-          title: "Manage Users",
-          icon: Icons.people_alt_outlined,
-          gradientColors: [
-            ThemeConfig.lightAccentBlue,
-            ThemeConfig.lightDeepBlue
-          ],
-          onNavigate: () => _navigateToPage(const ManageUserPage()),
-        ),
-        DashboardItem(
-          title: "Manage Reports",
-          icon: Icons.assessment_outlined,
-          gradientColors: [
-            ThemeConfig.lightSurfaceBlue,
-            ThemeConfig.lightAccentBlue
-          ],
-          onNavigate: () => _navigateToPage(const ManageUserPage()),
-        ),
-        DashboardItem(
-          title: "Manage Bans",
-          icon: Icons.gavel_outlined,
-          gradientColors: [Colors.red.shade300, Colors.red.shade700],
-          onNavigate: () => _navigateToPage(const ManageUserPage()),
-        ),
-        DashboardItem(
-          title: "Educational Info",
-          icon: Icons.school_outlined,
-          gradientColors: [Colors.orange.shade300, Colors.orange.shade700],
-          onNavigate: () => _navigateToPage(const ManageUserPage()),
-        ),
-        DashboardItem(
-          title: "Settings",
-          icon: Icons.settings_outlined,
-          gradientColors: [Colors.purple.shade300, Colors.purple.shade700],
-          onNavigate: () => _navigateToPage(const ManageUserPage()),
-        ),
-      ];
+  Future<void> _loadAdminData() async {
+    try {
+      final adminData = await _dashboardFirestore.getAdminData();
+      if (mounted) {
+        setState(() {
+          _adminName = adminData['name'] ?? 'Admin';
+          _adminPhotoUrl = adminData['photoURL'];
+          _lastLogin = _formatLastLogin(adminData['lastLogin']);
+        });
+      }
+    } catch (e) {
+      // Handle error silently or through a proper error handling mechanism
+    }
+  }
 
-  void _navigateToPage(Widget page) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+  String _formatLastLogin(String? lastLogin) {
+    if (lastLogin == null) return 'Today';
+    try {
+      final loginDate = DateTime.parse(lastLogin);
+      final now = DateTime.now();
+      final difference = now.difference(loginDate);
+
+      if (difference.inDays == 0) {
+        return 'Today, ${loginDate.hour}:${loginDate.minute.toString().padLeft(2, '0')} ${loginDate.hour >= 12 ? 'PM' : 'AM'}';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else {
+        return '${difference.inDays} days ago';
+      }
+    } catch (e) {
+      return 'Today';
+    }
   }
 
   void _initializeWebPages() {
     _webPages = [
       _buildDashboardContent(),
       const ManageUserPage(),
-      const Center(child: Text('Reports')),
-      const Center(child: Text('Bans')),
-      const Center(child: Text('Educational Info')),
-      const Center(child: Text('Settings')),
+      const ReportPage(),
+      const BanPeriodSchedulePage(),
+      const AdminEducationPage(),
+      const AdminSettingsPage(),
     ];
   }
 
   Widget _buildDashboardContent() {
     return SingleChildScrollView(
+      key: const PageStorageKey('dashboard_content'),
       child: Padding(
-        padding: const EdgeInsets.all(DashboardConstants.kPadding),
+        padding: const EdgeInsets.only(
+          top: 16.0,
+          left: DashboardConstants.kPadding,
+          right: DashboardConstants.kPadding,
+          bottom: DashboardConstants.kPadding,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -184,13 +175,11 @@ class _AdminDashboardPageState extends State<AdmindashboardPage> {
 
   Widget _buildAnalyticsCard() {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(DashboardConstants.kBorderRadius),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(DashboardConstants.kPadding),
+      margin: const EdgeInsets.all(16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -198,14 +187,96 @@ class _AdminDashboardPageState extends State<AdmindashboardPage> {
               'Analytics Overview',
               style: TextStyle(
                 color: ThemeConfig.textDark,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: DashboardConstants.kGridSpacing),
-            const SizedBox(
-              height: DashboardConstants.kAnalyticsHeight,
-              child: AnalyticsOverview(),
+            const SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  // Side by side on larger screens
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 400,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const UserAnalyticsChart(),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Container(
+                          height: 400,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const ReportAnalyticsChart(),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // Stack vertically on smaller screens
+                  return Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 400,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const UserAnalyticsChart(),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        height: 400,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const ReportAnalyticsChart(),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -214,314 +285,446 @@ class _AdminDashboardPageState extends State<AdmindashboardPage> {
   }
 
   Widget _buildActivitySections() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const DashboardSectionTitle(title: "Recent Activities"),
-        const SizedBox(height: DashboardConstants.kGridSpacing),
-        DashboardExpandableSection(
-          title: "Reports Overview",
-          isExpanded: _isReportsExpanded,
-          onToggle: () =>
-              setState(() => _isReportsExpanded = !_isReportsExpanded),
-          content: DashboardSectionContent(items: _reportsData),
-          icon: Icons.assessment_outlined,
-          color: ThemeConfig.lightAccentBlue,
-        ),
-        const SizedBox(height: DashboardConstants.kGridSpacing),
-        DashboardExpandableSection(
-          title: "Bans Overview",
-          isExpanded: _isBansExpanded,
-          onToggle: () => setState(() => _isBansExpanded = !_isBansExpanded),
-          content: DashboardSectionContent(items: _bansData),
-          icon: Icons.gavel_outlined,
-          color: Colors.red.shade400,
-        ),
-        const SizedBox(height: DashboardConstants.kGridSpacing),
-        DashboardExpandableSection(
-          title: "Educational Content",
-          isExpanded: _isEducationExpanded,
-          onToggle: () =>
-              setState(() => _isEducationExpanded = !_isEducationExpanded),
-          content: DashboardSectionContent(items: _educationData),
-          icon: Icons.school_outlined,
-          color: Colors.green.shade400,
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const DashboardSectionTitle(title: "Recent Activities"),
+          const SizedBox(height: DashboardConstants.kGridSpacing),
+          ValueListenableBuilder<int>(
+            valueListenable: _currentPageNotifier,
+            builder: (context, currentPage, _) {
+              return SizedBox(
+                height: 400,
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(DashboardConstants.kBorderRadius),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildNavigationHeader(currentPage),
+                      Expanded(
+                        child: PageView.builder(
+                          controller: _pageController,
+                          onPageChanged: _handlePageChanged,
+                          itemCount: _activitySections.length,
+                          itemBuilder: (context, index) {
+                            final section = _activitySections[index];
+                            return SingleChildScrollView(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: _buildActivitySection(section),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-      body: kIsWeb ? _buildWebLayout() : _buildMobileLayout(),
+  Widget _buildNavigationHeader(int currentPage) {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: _activitySections.asMap().entries.map((entry) {
+              return _buildTabButton(
+                index: entry.key,
+                section: entry.value,
+                isSelected: currentPage == entry.key,
+              );
+            }).toList(),
+          ),
+          Row(
+            children: [
+              _buildNavigationArrow(
+                icon: Icons.arrow_back_ios,
+                onTap: currentPage > 0 ? () => _animateToPage(currentPage - 1) : null,
+                isEnabled: currentPage > 0,
+                color: _activitySections[currentPage]['color'],
+              ),
+              _buildNavigationArrow(
+                icon: Icons.arrow_forward_ios,
+                onTap: currentPage < _activitySections.length - 1 
+                    ? () => _animateToPage(currentPage + 1) 
+                    : null,
+                isEnabled: currentPage < _activitySections.length - 1,
+                color: _activitySections[currentPage]['color'],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildWebLayout() {
+  Widget _buildTabButton({
+    required int index,
+    required Map<String, dynamic> section,
+    required bool isSelected,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _animateToPage(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? section['color'].withOpacity(0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? section['color'] : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  section['icon'],
+                  color: isSelected ? section['color'] : Colors.grey,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  section['title'].toString().split(' ')[0],
+                  style: TextStyle(
+                    color: isSelected ? section['color'] : Colors.grey,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationArrow({
+    required IconData icon,
+    required VoidCallback? onTap,
+    required bool isEnabled,
+    required Color color,
+  }) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        size: 20,
+        color: isEnabled ? color : Colors.grey.shade300,
+      ),
+      onPressed: onTap,
+    );
+  }
+
+  void _handlePageChanged(int page) {
+    _currentPageNotifier.value = page;
+  }
+
+  void _animateToPage(int index) {
+    _currentPageNotifier.value = index;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildActivitySection(Map<String, dynamic> section) {
     return Consumer<DashboardProvider>(
-      builder: (context, dashboardProvider, child) {
-        return Row(
-          children: [
-            _buildSidebar(dashboardProvider),
-            _buildResizeHandle(dashboardProvider),
-            Expanded(child: _webPages[dashboardProvider.currentIndex]),
-          ],
+      builder: (context, provider, child) {
+        if (section['title'] == 'Reports Overview') {
+          if (provider.isLoadingActivities) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          final recentReports = provider.recentReports;
+          if (recentReports.isEmpty) {
+            return const Center(
+              child: Text('No recent reports available'),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(section['icon'], color: section['color'], size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      section['title'],
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: section['color'],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...recentReports.map((report) => _buildActivityItem(
+                  {
+                    'title': report['title'],
+                    'time': report['time'],
+                    'description': report['description'],
+                    'type': report['type'],
+                  },
+                  section['color'],
+                )).toList(),
+              ],
+            ),
+          );
+        } else if (section['title'] == 'Bans Overview') {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(section['icon'], color: section['color'], size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      section['title'],
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: section['color'],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                BanPeriodActivityWidget(),
+              ],
+            ),
+          );
+        } else if (section['title'] == 'Educational Content') {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(section['icon'], color: section['color'], size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      section['title'],
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: section['color'],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                EducationActivityWidget(),
+              ],
+            ),
+          );
+        }
+
+        // Return original layout for other sections
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(section['icon'], color: section['color'], size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    section['title'],
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: section['color'],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...List.generate(
+                section['items'].length,
+                (index) => _buildActivityItem(
+                  section['items'][index],
+                  section['color'],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildMobileLayout() {
-    return Stack(
-      children: [
-        Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                ThemeConfig.lightPrimary.withOpacity(0.9),
-                ThemeConfig.lightSurface,
-                ThemeConfig.lightBackground,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
-          ),
+  Widget _buildActivityItem(Map<String, dynamic> item, Color color) {
+    return InkWell(
+      onTap: () {
+        // Navigate based on activity type
+        switch (item['type']) {
+          case 'report':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReportPage()),
+            );
+            break;
+          case 'ban':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BanPeriodSchedulePage()),
+            );
+            break;
+          case 'education':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminEducationPage()),
+            );
+            break;
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
-        SafeArea(
-          bottom: false,
-          child: RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _initializeDashboardItems();
-              });
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
-                child: _buildDashboardContent(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  item['title'],
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  item['time'],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item['description'],
+              style: TextStyle(
+                color: Colors.grey[800],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildSidebar(DashboardProvider dashboardProvider) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: dashboardProvider.isExpanded
-          ? dashboardProvider.sidebarWidth
-          : DashboardProvider.minSidebarWidth,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.0, 0.3, 0.6, 1.0],
-          colors: [
-            const Color.fromARGB(255, 13, 73, 153).withOpacity(0.95),
-            const Color.fromARGB(255, 5, 125, 190).withOpacity(0.85),
-            const Color.fromARGB(255, 54, 119, 192).withOpacity(0.9),
-            ThemeConfig.lightDeepBlue.withOpacity(1.0),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: ThemeConfig.lightDeepBlue.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(5, 0),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSidebarHeader(dashboardProvider),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.3, 0.7, 1.0],
-                  colors: [
-                    Colors.white.withOpacity(0.05),
-                    Colors.white.withOpacity(0.02),
-                    Colors.white.withOpacity(0.02),
-                    Colors.white.withOpacity(0.05),
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _currentPageNotifier.dispose();
+    super.dispose();
+  }
+
+  Widget _buildNavItem(BuildContext context, int index, String title, IconData icon) {
+    return Consumer<DashboardProvider>(
+      builder: (context, dashboardProvider, child) {
+        final isSelected = dashboardProvider.currentIndex == index;
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 8), // Increased vertical margin
+          width: double.infinity,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => dashboardProvider.setCurrentIndex(index),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // Increased padding
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      color: isSelected ? Colors.white : Colors.white70,
+                      size: 28, // Increased icon size
+                    ),
+                    if (dashboardProvider.isExpanded) ...[
+                      const SizedBox(width: 16), // Increased spacing
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white70,
+                            fontSize: 16, // Increased font size
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (isSelected)
+                        Container(
+                          width: 6, // Slightly larger dot
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: _buildNavigationItems(dashboardProvider),
-                ),
-              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebarHeader(DashboardProvider dashboardProvider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.0, 0.5, 1.0],
-          colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.05),
-            Colors.white.withOpacity(0.1),
-          ],
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.15),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (dashboardProvider.isExpanded) ...[
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withOpacity(0.2),
-                      Colors.white.withOpacity(0.1),
-                    ],
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Image.asset(
-                    'assets/MarineGuard-Logo-light.jpg',
-                    height: 80,
-                    width: 80,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Welcome back,',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const Text(
-              'Admin',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: ThemeConfig.lightAccent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    color: Colors.white.withOpacity(0.7),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Last login: Today, 9:30 AM',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else
-            Center(
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/MarineGuard-Logo-light.jpg',
-                      height: 45,
-                      width: 45,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: InkWell(
-                      onTap: dashboardProvider.toggleSidebar,
-                      child: Icon(
-                        dashboardProvider.isExpanded
-                            ? Icons.chevron_left
-                            : Icons.chevron_right,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResizeHandle(DashboardProvider dashboardProvider) {
-    return GestureDetector(
-      onHorizontalDragUpdate: (details) =>
-          dashboardProvider.updateSidebarWidth(details.delta.dx),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.resizeColumn,
-        child: Container(
-          width: 8,
-          color: Colors.transparent,
-          child: const VerticalDivider(
-            thickness: 1,
-            width: 1,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -532,107 +735,189 @@ class _AdminDashboardPageState extends State<AdmindashboardPage> {
       _buildNavItem(context, 2, 'Reports', Icons.assessment_outlined),
       _buildNavItem(context, 3, 'Bans', Icons.gavel_outlined),
       _buildNavItem(context, 4, 'Education', Icons.school_outlined),
-      const Divider(
-        color: Colors.white24,
-        thickness: 1,
-        indent: 16,
-        endIndent: 16,
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Divider(
+          color: Colors.white24,
+          thickness: 1,
+        ),
       ),
       _buildNavItem(context, 5, 'Settings', Icons.settings_outlined),
     ];
     return navItems;
   }
 
-  Widget _buildNavItem(
-      BuildContext context, int index, String title, IconData icon) {
-    return Consumer<DashboardProvider>(
-      builder: (context, dashboardProvider, child) {
-        final isSelected = dashboardProvider.currentIndex == index;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Material(
-            color: Colors.transparent,
+  Widget _buildSidebar(DashboardProvider dashboardProvider) {
+    final fullWidth = dashboardProvider.sidebarWidth;
+    return Container(
+      width: dashboardProvider.isExpanded
+          ? fullWidth
+          : DashboardProvider.minSidebarWidth,
+      color: const Color(0xFF1A237E),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             child: dashboardProvider.isExpanded
-                ? ListTile(
-                    onTap: () => dashboardProvider.setCurrentIndex(index),
-                    selected: isSelected,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    selectedTileColor:
-                        ThemeConfig.lightAccent.withOpacity(0.15),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isSelected
-                              ? [
-                                  ThemeConfig.lightAccentBlue.withOpacity(0.3),
-                                  ThemeConfig.lightAccentBlue.withOpacity(0.1),
-                                ]
-                              : [
-                                  Colors.white.withOpacity(0.1),
-                                  Colors.white.withOpacity(0.05),
-                                ],
+                ? Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage: _adminPhotoUrl != null
+                            ? NetworkImage(_adminPhotoUrl!)
+                            : null,
+                        child: _adminPhotoUrl == null
+                            ? Icon(
+                                Icons.person,
+                                color: Colors.grey[700],
+                                size: 30,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _adminName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              softWrap: true,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: dashboardProvider.isOnline ? Colors.green : Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  dashboardProvider.isOnline ? 'Online' : 'Offline',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        icon,
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.7),
-                        size: 22,
-                      ),
-                    ),
-                    title: Text(
-                      title,
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.7),
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                    hoverColor: ThemeConfig.lightAccent.withOpacity(0.1),
+                    ],
                   )
-                : InkWell(
-                    onTap: () => dashboardProvider.setCurrentIndex(index),
-                    borderRadius: BorderRadius.circular(10),
-                    hoverColor: ThemeConfig.lightAccent.withOpacity(0.1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isSelected
-                              ? [
-                                  ThemeConfig.lightAccentBlue.withOpacity(0.3),
-                                  ThemeConfig.lightAccentBlue.withOpacity(0.1),
-                                ]
-                              : [
-                                  Colors.transparent,
-                                  Colors.transparent,
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.7),
-                        size: 24,
-                      ),
+                : Center(
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: _adminPhotoUrl != null
+                          ? NetworkImage(_adminPhotoUrl!)
+                          : null,
+                      child: _adminPhotoUrl == null
+                          ? Icon(
+                              Icons.person,
+                              color: Colors.grey[700],
+                              size: 24,
+                            )
+                          : null,
                     ),
                   ),
           ),
-        );
-      },
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: _buildNavigationItems(dashboardProvider),
+              ),
+            ),
+          ),
+          if (dashboardProvider.isExpanded)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Version 1.0.0',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: const Color(0xFF003366),
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      title: Row(
+        children: [
+          const SizedBox(width: 8),
+          Image.asset(
+            'assets/MarineGuard-Logo-launcher-icon.png',
+            height: 89,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Marine Guard',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      actions: const [
+        NotificationBell(),
+        SizedBox(width: 16),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          Consumer<DashboardProvider>(
+            builder: (context, dashboardProvider, child) {
+              return _buildSidebar(dashboardProvider);
+            },
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: _buildAppBar(context),
+                ),
+                Expanded(
+                  child: Consumer<DashboardProvider>(
+                    builder: (context, dashboardProvider, child) {
+                      return Container(
+                        color: const Color(0xFFF5F6FA),
+                        child: _webPages[dashboardProvider.currentIndex],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

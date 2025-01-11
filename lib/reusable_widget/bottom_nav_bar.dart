@@ -12,7 +12,6 @@ import 'package:mobileapplication/userdashboard/usersettingspage/usersettings_pa
 // Admin Dashboard Imports
 import 'package:mobileapplication/admindashboard/admindashboardpage/admindashboard_page.dart';
 import 'package:mobileapplication/admindashboard/usermanagementpage/usermanagement_page.dart';
-import 'package:mobileapplication/admindashboard/managereport_page.dart';
 
 // Base Navigation Bar Widget
 abstract class BaseNavBar extends StatefulWidget {

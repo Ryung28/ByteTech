@@ -23,7 +23,6 @@ class _EditUserPageState extends State<EditUserPage> {
   late bool _isAdmin;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  int currentIndex = 1;
   final UserService _userService = UserService();
 
   @override
@@ -105,78 +104,75 @@ class _EditUserPageState extends State<EditUserPage> {
           bottom: false,
           child: SingleChildScrollView(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 100),
+              padding: EdgeInsets.all(20),
               child: Column(
                 children: [
                   EditUserWidgets.buildHeader(context, widget.user),
-                  Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.1),
-                            spreadRadius: 5,
-                            blurRadius: 10,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              EditUserWidgets.buildInputField(
-                                controller: _firstNameController,
-                                label: 'First Name',
-                                icon: Icons.person_outline,
-                              ),
-                              SizedBox(height: 20),
-                              EditUserWidgets.buildInputField(
-                                controller: _lastNameController,
-                                label: 'Last Name',
-                                icon: Icons.person_outline,
-                              ),
-                              SizedBox(height: 20),
-                              EditUserWidgets.buildInputField(
-                                controller: _usernameController,
-                                label: 'Username',
-                                icon: Icons.account_circle_outlined,
-                              ),
-                              SizedBox(height: 20),
-                              EditUserWidgets.buildInputField(
-                                controller: _emailController,
-                                label: 'Email',
-                                icon: Icons.email_outlined,
-                              ),
-                              SizedBox(height: 20),
-                              EditUserWidgets.buildInputField(
-                                controller: _passwordController,
-                                label: widget.user == null ? 'Password' : 'New Password (optional)',
-                                icon: Icons.lock_outline,
-                                isPassword: true,
-                                obscureText: _obscurePassword,
-                                onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
-                                isOptional: widget.user != null,
-                              ),
-                              SizedBox(height: 20),
-                              EditUserWidgets.buildAdminSwitch(
-                                value: _isAdmin,
-                                onChanged: (value) => setState(() => _isAdmin = value),
-                              ),
-                              SizedBox(height: 30),
-                              ElevatedButton(
-                                onPressed: _isLoading
-                                    ? null
-                                    : () => _handleSave(),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 5,
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            EditUserWidgets.buildInputField(
+                              controller: _firstNameController,
+                              label: 'First Name',
+                              icon: Icons.person_outline,
+                            ),
+                            SizedBox(height: 20),
+                            EditUserWidgets.buildInputField(
+                              controller: _lastNameController,
+                              label: 'Last Name',
+                              icon: Icons.person_outline,
+                            ),
+                            SizedBox(height: 20),
+                            EditUserWidgets.buildInputField(
+                              controller: _usernameController,
+                              label: 'Username',
+                              icon: Icons.account_circle_outlined,
+                            ),
+                            SizedBox(height: 20),
+                            EditUserWidgets.buildInputField(
+                              controller: _emailController,
+                              label: 'Email',
+                              icon: Icons.email_outlined,
+                            ),
+                            SizedBox(height: 20),
+                            EditUserWidgets.buildInputField(
+                              controller: _passwordController,
+                              label: widget.user == null ? 'Password' : 'New Password (optional)',
+                              icon: Icons.lock_outline,
+                              isPassword: true,
+                              obscureText: _obscurePassword,
+                              onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
+                              isOptional: widget.user != null,
+                            ),
+                            SizedBox(height: 20),
+                            EditUserWidgets.buildAdminSwitch(
+                              value: _isAdmin,
+                              onChanged: (value) => setState(() => _isAdmin = value),
+                            ),
+                            SizedBox(height: 30),
+                            Container(
+                              height: 55,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : () => _handleSave(),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Color(0xFF1976D2),
-                                  padding: EdgeInsets.symmetric(vertical: 15),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(15),
                                   ),
@@ -191,18 +187,24 @@ class _EditUserPageState extends State<EditUserPage> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : Text(
-                                        widget.user == null
-                                            ? 'Add User'
-                                            : 'Save Changes',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.save_outlined, color: Colors.white),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            widget.user == null ? 'Save New User' : 'Save Changes',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -211,11 +213,6 @@ class _EditUserPageState extends State<EditUserPage> {
               ),
             ),
           ),
-        ),
-        bottomNavigationBar: FloatingNavBar(
-          currentIndex: currentIndex,
-          backgroundColor: Colors.transparent,
-          isAdmin: true,
         ),
       ),
     );

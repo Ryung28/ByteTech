@@ -10,7 +10,7 @@ class AnalyticsProvider with ChangeNotifier {
   int _currentPage = 0;
 
   AnalyticsProvider() : _analyticsService = AnalyticsService() {
-    _initializeAnalyticsStream();
+    _initializeAnalytics();
   }
 
   // Getters
@@ -21,9 +21,35 @@ class AnalyticsProvider with ChangeNotifier {
   bool get hasData => _analyticsData != null && _analyticsData!.isNotEmpty;
   int? get currentUserCount => _analyticsData?.lastOrNull?.userCount;
 
+  Future<void> _initializeAnalytics() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Initialize analytics service
+      await _analyticsService.initializeAnalytics();
+
+      // Get initial data
+      final data = await _analyticsService.fetchAnalyticsData();
+      
+      _analyticsData = data;
+      _error = null;
+
+      // Start listening to updates
+      _initializeAnalyticsStream();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void _initializeAnalyticsStream() {
     _analyticsService.getAnalyticsStream().listen(
       (data) {
+        if (data.isNotEmpty) {
+        }
         _analyticsData = data;
         _isLoading = false;
         _error = null;
@@ -44,10 +70,10 @@ class AnalyticsProvider with ChangeNotifier {
     }
   }
 
-  void retry() {
+  Future<void> retry() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    _initializeAnalyticsStream();
+    await _initializeAnalytics();
   }
 }

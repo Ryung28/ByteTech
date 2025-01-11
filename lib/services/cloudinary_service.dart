@@ -16,19 +16,17 @@ class CloudinaryService {
 
       final bytes = await file.length();
       final extension = file.path.split('.').last.toLowerCase();
-      
-      // 100MB for images, 1GB for videos
-      final maxSize = _isVideoFile(extension) 
-          ? 1024 * 1024 * 1024  // 1GB
-          : 100 * 1024 * 1024;  // 100MB
-          
+
+      final maxSize =
+          _isVideoFile(extension) ? 1024 * 1024 * 1024 : 100 * 1024 * 1024;
+
       if (bytes > maxSize) {
-        throw Exception(_isVideoFile(extension) 
+        throw Exception(_isVideoFile(extension)
             ? 'Video size exceeds 1GB limit'
             : 'Image size exceeds 100MB limit');
       }
 
-      final resourceType = _getResourceType(extension); 
+      final resourceType = _getResourceType(extension);
 
       CloudinaryResponse response = await cloudinary.uploadFile(
           CloudinaryFile.fromFile(file.path,
@@ -70,14 +68,15 @@ class CloudinaryService {
     }
   }
 
-  static Future<List<String>> uploadFiles(List<File> files, String folder) async {
+  static Future<List<String>> uploadFiles(
+      List<File> files, String folder) async {
     if (files.isEmpty) {
       throw Exception('No files provided for upload');
     }
 
     List<String> urls = [];
     List<String> errors = [];
-    
+
     // Create a copy of the list to avoid concurrent modification
     final filesToUpload = List<File>.from(files);
 
@@ -100,11 +99,21 @@ class CloudinaryService {
   static bool isValidFileType(String filePath) {
     final extension = filePath.split('.').last.toLowerCase();
     final validExtensions = [
-      'jpg', 'jpeg', 'png', 'gif', 'webp',  
-      'mp4', 'mov', 'avi', 'wmv',           
-      'pdf', 'doc', 'docx', 'txt'           
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'mp4',
+      'mov',
+      'avi',
+      'wmv',
+      'pdf',
+      'doc',
+      'docx',
+      'txt'
     ];
-    
+
     return validExtensions.contains(extension);
   }
 

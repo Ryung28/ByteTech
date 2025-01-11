@@ -1,73 +1,88 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobileapplication/services/cloudinary_service.dart';
+import 'package:mobileapplication/userdashboard/usercomplaintpage/firestore_service.dart';
+import 'package:mobileapplication/userdashboard/usercomplaintpage/complaint_page.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobileapplication/userdashboard/usercomplaintpage/complaint_success_modal.dart';
 
 class ComplaintFormProvider extends ChangeNotifier {
-  // Form state
   final formKey = GlobalKey<FormState>();
-  final picker = ImagePicker();
-  
-  // Form data
+  final ImagePicker _picker = ImagePicker();
+
   String _name = '';
   DateTime? _dateOfBirth;
   String _phone = '';
   String _email = '';
-  String _address = '';
+  String? _address;
   String _complaint = '';
   List<File> _attachedFiles = [];
-  bool _showDateValidation = false;
+  bool _isSubmitting = false;
   String? _message;
   bool _isError = false;
+  Position? _location;
 
-  // Getters
   String get name => _name;
   DateTime? get dateOfBirth => _dateOfBirth;
   String get phone => _phone;
   String get email => _email;
-  String get address => _address;
+  String? get address => _address;
   String get complaint => _complaint;
   List<File> get attachedFiles => _attachedFiles;
-  bool get showDateValidation => _showDateValidation;
+  bool get isSubmitting => _isSubmitting;
   String? get message => _message;
   bool get isError => _isError;
+  Position? get location => _location;
 
   // Update methods
-  void updateName(String value) {
-    _name = value;
+  void updateField(String field, dynamic value) {
+    switch (field) {
+      case 'name':
+        _name = value;
+        break;
+      case 'dateOfBirth':
+        _dateOfBirth = value;
+        break;
+      case 'phone':
+        _phone = value;
+        break;
+      case 'email':
+        _email = value;
+        break;
+      case 'address':
+        _address = value;
+        break;
+      case 'complaint':
+        _complaint = value;
+        break;
+    }
     notifyListeners();
   }
 
-  void updateDateOfBirth(DateTime? value) {
-    _dateOfBirth = value;
-    _showDateValidation = false;
+  void setSubmitting(bool value) {
+    _isSubmitting = value;
     notifyListeners();
   }
 
-  void updatePhone(String value) {
-    _phone = value;
-    notifyListeners();
-  }
-
-  void updateEmail(String value) {
-    _email = value;
-    notifyListeners();
-  }
-
-  void updateAddress(String value) {
-    _address = value;
-    notifyListeners();
-  }
-
-  void updateComplaint(String value) {
-    _complaint = value;
-    notifyListeners();
-  }
-
-  // File handling
-  void addFile(File file) {
-    _attachedFiles.add(file);
-    notifyListeners();
+  // File handling methods
+  Future<void> pickFile(ImageSource source, {bool isVideo = false}) async {
+    try {
+      final XFile? file = isVideo
+          ? await _picker.pickVideo(source: source)
+          : await _picker.pickImage(source: source);
+      if (file != null) {
+        _attachedFiles.add(File(file.path));
+        notifyListeners();
+      }
+    } catch (e) {
+      _message = 'Failed to pick file: $e';
+      _isError = true;
+      notifyListeners();
+    }
   }
 
   void removeFile(int index) {
@@ -77,87 +92,197 @@ class ComplaintFormProvider extends ChangeNotifier {
     }
   }
 
-  // Form actions
+  void addFile(File file) {
+    _attachedFiles.add(file);
+    notifyListeners();
+  }
+
+  bool validateAllFields() {
+    if (!formKey.currentState!.validate()) return false;
+
+    final isValid = _name.isNotEmpty &&
+        _dateOfBirth != null &&
+        _phone.isNotEmpty &&
+        _email.isNotEmpty &&
+        _address != null &&
+        _complaint.isNotEmpty;
+
+    if (!isValid) {
+      _message = 'Please fill in all required fields';
+      _isError = true;
+      notifyListeners();
+    }
+
+    return isValid;
+  }
+
+  Future<void> updateLocation() async {
+    try {
+      _location = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Convert coordinates to address
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _location!.latitude,
+        _location!.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        _address =
+            '${placemark.street}, ${placemark.locality}, ${placemark.administrativeArea}, ${placemark.country}';
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _message = 'Failed to get location: $e';
+      _isError = true;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> submitComplaint(BuildContext context) async {
+    if (!formKey.currentState!.validate()) return null;
+
+    formKey.currentState!.save();
+
+    try {
+      setSubmitting(true);
+
+      // Ensure location is updated
+      await updateLocation();
+
+      // Upload files to Cloudinary
+      List<String> fileUrls = [];
+      if (_attachedFiles.isNotEmpty) {
+        fileUrls =
+            await CloudinaryService.uploadFiles(_attachedFiles, 'complaints');
+      }
+
+      // Submit to Firestore
+      final complaintId = await FirestoreService.createComplaint(
+        name: _name,
+        dateOfBirth: _dateOfBirth!,
+        phone: _phone,
+        email: _email,
+        address: _address ?? 'Unknown location',
+        complaint: _complaint,
+        attachedFiles: fileUrls,
+      );
+
+      if (complaintId != null && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+              }
+            });
+
+            return ComplaintSuccessModal(
+              complaintNumber: complaintId,
+              onDismissed: null,
+            );
+          },
+        );
+
+        // Clear form
+        clearForm();
+        if (context.mounted) {
+          _name = '';
+          _dateOfBirth = null;
+          _phone = '';
+          _email = '';
+          _address = '';
+          _complaint = '';
+          _attachedFiles = [];
+          _location = null;
+          formKey.currentState?.reset();
+          notifyListeners();
+        }
+      }
+
+      return complaintId;
+    } catch (e) {
+      _message = 'Failed to submit complaint: $e';
+      _isError = true;
+      notifyListeners();
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   void clearForm() {
+    formKey.currentState?.reset();
     _name = '';
     _dateOfBirth = null;
     _phone = '';
     _email = '';
-    _address = '';
+    _address = null;
     _complaint = '';
-    _attachedFiles.clear();
-    _showDateValidation = false;
+    _attachedFiles = [];
     _message = null;
     _isError = false;
     notifyListeners();
   }
 
-  // Validation methods
-  int calculateAge(DateTime birthDate) {
-    DateTime currentDate = DateTime.now();
-    int age = currentDate.year - birthDate.year;
-    if (currentDate.month < birthDate.month ||
-        (currentDate.month == birthDate.month &&
-            currentDate.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
+  // Add these methods alongside other update methods
+  void updateName(String value) => updateField('name', value);
+  void updateDateOfBirth(DateTime value) => updateField('dateOfBirth', value);
+  void updatePhone(String value) => updateField('phone', value);
+  void updateEmail(String value) => updateField('email', value);
+  void updateAddress(String value) => updateField('address', value);
+  void updateComplaint(String value) => updateField('complaint', value);
+}
 
-  // Form submission
-  Future<bool> submitForm(BuildContext context) async {
-    _showDateValidation = true;
-    notifyListeners();
+class ReportPage extends StatelessWidget {
+  const ReportPage({Key? key}) : super(key: key);
 
-    if (!_validateForm(context)) return false;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Report Management'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('complaints').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    try {
-      List<String> fileUrls = await _uploadFiles();
-      await _saveComplaint(fileUrls);
-      _showSuccessMessage(context);
-      clearForm();
-      return true;
-    } catch (e) {
-      _showErrorMessage(context, e.toString());
-      return false;
-    }
-  }
+          final complaints = snapshot.data!.docs;
 
-  // Private helper methods
-  bool _validateForm(BuildContext context) {
-    if (!formKey.currentState!.validate()) return false;
-    if (_dateOfBirth == null || calculateAge(_dateOfBirth!) < 18) {
-      _showAgeValidationError(context);
-      return false;
-    }
-    return true;
-  }
+          return ListView.builder(
+            itemCount: complaints.length,
+            itemBuilder: (context, index) {
+              final complaint = complaints[index];
+              final address =
+                  complaint['address'] as String? ?? 'No address available';
 
-  Future<List<String>> _uploadFiles() async {
-    if (_attachedFiles.isEmpty) return [];
-    return await CloudinaryService.uploadFiles(_attachedFiles, 'complaints');
-  }
-
-  Future<void> _saveComplaint(List<String> fileUrls) async {
-    formKey.currentState!.save();
-    // Add your backend save logic here
-  }
-
-  void _showSuccessMessage(BuildContext context) {
-    _message = 'Complaint submitted successfully';
-    _isError = false;
-    notifyListeners();
-  }
-
-  void _showErrorMessage(BuildContext context, String error) {
-    _message = 'Error submitting complaint: $error';
-    _isError = true;
-    notifyListeners();
-  }
-
-  void _showAgeValidationError(BuildContext context) {
-    _message = 'You must be at least 18 years old';
-    _isError = true;
-    notifyListeners();
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  title: Text('Complaint ID: ${complaint.id}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Name: ${complaint['name']}'),
+                      Text('Status: ${complaint['status']}'),
+                      const SizedBox(height: 4),
+                      Text('Address: $address'),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }

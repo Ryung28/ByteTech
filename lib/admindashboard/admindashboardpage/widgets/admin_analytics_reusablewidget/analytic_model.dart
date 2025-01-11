@@ -5,12 +5,16 @@ class AnalyticsData {
   final int userCount;
   final int reportCount;
   final int activeBanCount;
+  final int regularUserCount;
+  final int googleUserCount;
 
   AnalyticsData({
     required this.date,
     required this.userCount,
     required this.reportCount,
     required this.activeBanCount,
+    this.regularUserCount = 0,
+    this.googleUserCount = 0,
   });
 
   factory AnalyticsData.fromFirestore(Map<String, dynamic> data) {
@@ -19,6 +23,8 @@ class AnalyticsData {
       userCount: data['userCount'] ?? 0,
       reportCount: data['reportCount'] ?? 0,
       activeBanCount: data['activeBanCount'] ?? 0,
+      regularUserCount: data['regularUserCount'] ?? 0,
+      googleUserCount: data['googleUserCount'] ?? 0,
     );
   }
 
@@ -27,12 +33,16 @@ class AnalyticsData {
     int? userCount,
     int? reportCount,
     int? activeBanCount,
+    int? regularUserCount,
+    int? googleUserCount,
   }) {
     return AnalyticsData(
       date: date ?? this.date,
       userCount: userCount ?? this.userCount,
       reportCount: reportCount ?? this.reportCount,
       activeBanCount: activeBanCount ?? this.activeBanCount,
+      regularUserCount: regularUserCount ?? this.regularUserCount,
+      googleUserCount: googleUserCount ?? this.googleUserCount,
     );
   }
 }
